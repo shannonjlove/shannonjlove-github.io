@@ -136,6 +136,81 @@ Expected: `tenancy.name == "lovecloud"`, `user.name == "shannonjlove@mac.com"`, 
 4. **py_compile failure path**: restore-snapshot-and-report, not retry-and-restart.
 5. **BookStack creds**: verify presence before assuming write access to page 479.
 
+## DeltaWalker — Config Diff & Merge Skill
+
+DeltaWalker (Deltopia Inc., deltawalker.com) is the designated tool for resolving configuration discrepancies on Nexus — including the open questions around dual OCI configs and the port conflict. Docs last updated April 29, 2026.
+
+### Core concepts
+
+| Term | Meaning |
+|---|---|
+| Reference | First/left content area — all differences defined relative to this |
+| Modified | Second/right content area |
+| Two-way | Reference vs Modified |
+| Three-way | Common ancestor (center) vs Reference vs Modified — shows conflicts |
+| Deletion | Block in Reference missing from Modified (orange) |
+| Addition | Block in Modified absent from Reference (blue) |
+| Change | Block present in both but altered (green) |
+| Conflict | Both Modified sides differ from ancestor (red — three-way only) |
+| Bird's-Eye View | Scaled color strip on the right — instant overview of all difference locations |
+
+### Key DeltaWalker capabilities relevant to Nexus
+
+**Remote comparison via SFTP** — DeltaWalker can open files directly from Nexus without copying them:
+```
+sftp://sjl@72.61.74.250/opt/secrets/oci-config
+sftp://sjl@72.61.74.250/opt/secrets/oci/config
+```
+Credentials go in the Open Remote Resource dialog only — never in the path field.
+
+**Three-way comparison** — the right mode for the OCI config question:
+- Ancestor / Reference: the known-good baseline (e.g. the 20260621T210512Z snapshot)
+- Left: `/opt/secrets/oci-config` (canonical)
+- Right: `/opt/secrets/oci/config` (source)
+
+This surfaces whether the two live configs agree with each other and with the baseline.
+
+**Folder comparison** — start at the folder level to see structural drift, then drill into individual files. Relevant for comparing `/opt/secrets/` snapshots before/after edits (Hard Rule 4).
+
+**Command line invocation** (macOS):
+```bash
+# Two-way file comparison
+/Applications/DeltaWalker.app/Contents/MacOS/DeltaWalker \
+  -pwd=/opt/secrets \
+  oci-config oci/config
+
+# Three-way (third path = ancestor/reference)
+/Applications/DeltaWalker.app/Contents/MacOS/DeltaWalker \
+  -pwd=/opt/secrets \
+  oci-config oci/config baseline-oci-config
+
+# Label the panels for clarity
+/Applications/DeltaWalker.app/Contents/MacOS/DeltaWalker \
+  -title1="canonical (oci-config)" \
+  -title2="source (oci/config)" \
+  /opt/secrets/oci-config /opt/secrets/oci/config
+```
+
+**Saving**: Cmd+S saves the focused file; Cmd+Shift+S saves all. HTTP/HTTPS are read-only; use WebDAV for remote saves. SFTP supports save.
+
+### Applying DeltaWalker to open Nexus questions
+
+| Open question | DeltaWalker approach |
+|---|---|
+| Port 8797 vs 8798 | Compare unit file vs password manager entry — two-way text compare |
+| `oci-config` vs `oci/config` | Three-way compare with 20260621T210512Z baseline as ancestor |
+| Pre/post snapshot verification (Hard Rule 4) | Folder compare: timestamped snapshot dir vs live `/srv/sjl/…/app` dir |
+| Config drift over time | Folder compare: current `/opt/secrets/` vs known-good archived snapshot |
+
+### DeltaWalker skill checklist (before resolving any config conflict)
+
+1. Start with **folder comparison** to get the Bird's-Eye view of scope
+2. Select only **changed** files (not additions/deletions unless expected)
+3. Use **three-way** when a baseline exists — it distinguishes change from conflict
+4. Check the **summary dialog** (counts of same/deleted/added/changed) before merging
+5. Save to the **canonical** path after Shannon confirms which file wins
+6. Never save values to a path that gets committed to git
+
 ## Remote Control Setup (iOS-only, headless VPS)
 
 **Auth**: Must use `claude auth login` (subscription OAuth). API keys and `CLAUDE_CODE_OAUTH_TOKEN` are inference-only and cannot establish Remote Control sessions. `unset ANTHROPIC_API_KEY` before authenticating.
