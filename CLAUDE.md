@@ -211,6 +211,100 @@ This surfaces whether the two live configs agree with each other and with the ba
 5. Save to the **canonical** path after Shannon confirms which file wins
 6. Never save values to a path that gets committed to git
 
+## Storage, Media & Stash Stack
+
+### iDrive e2 — S3-Compatible Object Storage
+
+iDrive e2 is the primary cloud object storage for SJL. It exposes a standard S3-compatible API.
+
+| Field | Value |
+|---|---|
+| Console | https://console.idrivee2.com/dashboard |
+| rclone provider | `IDrive` |
+| Credentials source | iDrive e2 console → Access Keys |
+| Secret refs (paths only) | Access key ID and secret in `/opt/secrets/sjl-cloud-integrations.env` or dedicated file — **never print values** |
+
+Standard rclone remote block (values from console — never commit):
+```ini
+[idrive-e2]
+type = s3
+provider = IDrive
+access_key_id = <from iDrive e2 console>
+secret_access_key = <from iDrive e2 console>
+endpoint = <region-specific endpoint from console>
+```
+
+Endpoint format is region-specific — always copy from the iDrive e2 console, not assumed.
+
+### rclone — Cloud Storage CLI
+
+rclone is the primary tool for moving data between Nexus, iDrive e2, OCI Object Storage, and other backends. Installed on Nexus under the `sjl` account.
+
+**Safety rule: always run `--dry-run` first on any sync/copy/move operation.**
+
+| Command | Behavior |
+|---|---|
+| `rclone copy src remote:dest` | Copy new/changed files only; never deletes from dest |
+| `rclone sync src remote:dest` | Makes dest identical to src; **deletes** files from dest not in src |
+| `rclone bisync src remote:dest` | Two-way sync; requires `--resync` on first run |
+| `rclone move src remote:dest` | Copy then delete source |
+| `rclone check src remote:dest` | Verify checksums without moving data |
+| `rclone mount remote:path /mnt/point` | FUSE mount; `--daemon` for background |
+| `rclone lsd remote:` | List top-level directories in remote |
+| `rclone ls remote:bucket` | List all files recursively |
+
+Key flags:
+```
+--dry-run          show what would be done, no changes
+--progress         live transfer stats
+--transfers N      parallel transfers (default 4)
+--checkers N       parallel checksum workers (default 8)
+--filter-from f    filter rules file
+--log-file f       write log to file
+--log-level DEBUG  verbose logging
+```
+
+rclone config file location on Nexus: `~/.config/rclone/rclone.conf` (sjl user)
+
+**Prefer `rclone copy` over `rclone sync`** for backups unless you have confirmed the intent is to delete destination files.
+
+### Jellyfin — Self-Hosted Media Server
+
+Jellyfin is a free, open-source (GPL-2.0) media server with no tracking or mandatory account. Target deployment: Nexus or oracle-sos via rootless Podman.
+
+| Property | Value |
+|---|---|
+| Docs | https://jellyfin.org |
+| License | GPL-2.0 — free forever |
+| Default port | 8096 (HTTP), 8920 (HTTPS) |
+| Config dir | `/home/sjl/.config/jellyfin/` (rootless Podman bind mount) |
+| Media dir | `/srv/sjl/media/` (expected — verify on Nexus) |
+
+Rootless Podman run pattern (DO NOT use Docker or docker-compose):
+```bash
+podman run -d \
+  --name jellyfin \
+  --user sjl \
+  -p 8096:8096 \
+  -v /home/sjl/.config/jellyfin:/config:z \
+  -v /srv/sjl/media:/media:z,ro \
+  docker.io/jellyfin/jellyfin:latest
+```
+
+Enable linger for auto-start: `loginctl enable-linger sjl`
+
+Key features relevant to SJL stack:
+- Movies, TV shows, music, live TV, books, photos
+- SyncPlay (synchronized playback across clients)
+- Hardware transcoding support (useful on oracle-sos ARM)
+- No tracking, no mandatory account, no vendor lock-in
+
+### Stash Repo — `shannonjlove/stash`
+
+GitHub repo `shannonjlove/stash` is referenced in the SJL stack. Contents unknown — not in scope for this session. Add repo to session scope via `add_repo` MCP tool before inspecting.
+
+Expected role: scratch/stash repository for scripts, configs, or snippets supporting the Nexus/oracle-sos infrastructure. Do not assume contents — verify when in scope.
+
 ## Remote Control Setup (iOS-only, headless VPS)
 
 **Auth**: Must use `claude auth login` (subscription OAuth). API keys and `CLAUDE_CODE_OAUTH_TOKEN` are inference-only and cannot establish Remote Control sessions. `unset ANTHROPIC_API_KEY` before authenticating.
