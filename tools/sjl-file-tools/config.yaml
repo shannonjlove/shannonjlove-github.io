@@ -1,0 +1,197 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# FileWarden Config — SJL PARA Production Rules
+# /etc/filewarden/config.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+
+watches:
+
+  # ── Inbox: sort and SJL-rename everything that lands here ─────────────────
+  - path: /data/inbox
+    enabled: true
+    recursive: false
+    delay_seconds: 2        # wait for write to settle
+
+    rules:
+
+      # 1 — PDF documents
+      - name: "Inbox: PDF → SJL rename + move to documents"
+        enabled: true
+        match: all
+        conditions:
+          - attribute: extension
+            operator: is
+            value: pdf
+        actions:
+          - type: sjl_rename
+            params:
+              category: document
+              subcategory: pdf
+          - type: mkdir_move
+            params:
+              base: /data/documents
+              subdir_pattern: "{year}/{month}"
+        stop_processing: true
+
+      # 2 — Word / text docs
+      - name: "Inbox: DOCX/TXT → SJL rename + move"
+        enabled: true
+        match: any
+        conditions:
+          - attribute: extension
+            operator: is
+            value: docx
+          - attribute: extension
+            operator: is
+            value: txt
+          - attribute: extension
+            operator: is
+            value: md
+        actions:
+          - type: sjl_rename
+            params:
+              category: document
+              subcategory: text
+          - type: mkdir_move
+            params:
+              base: /data/documents
+              subdir_pattern: "{year}/{month}"
+        stop_processing: true
+
+      # 3 — Images
+      - name: "Inbox: Images → SJL rename + move"
+        enabled: true
+        match: any
+        conditions:
+          - attribute: extension
+            operator: is
+            value: jpg
+          - attribute: extension
+            operator: is
+            value: jpeg
+          - attribute: extension
+            operator: is
+            value: png
+          - attribute: extension
+            operator: is
+            value: webp
+          - attribute: extension
+            operator: is
+            value: heic
+        actions:
+          - type: sjl_rename
+            params:
+              category: media
+              subcategory: image
+          - type: mkdir_move
+            params:
+              base: /data/media/images
+              subdir_pattern: "{year}/{month}"
+        stop_processing: true
+
+      # 4 — Videos
+      - name: "Inbox: Videos → SJL rename + move"
+        enabled: true
+        match: any
+        conditions:
+          - attribute: extension
+            operator: is
+            value: mp4
+          - attribute: extension
+            operator: is
+            value: mov
+          - attribute: extension
+            operator: is
+            value: mkv
+        actions:
+          - type: sjl_rename
+            params:
+              category: media
+              subcategory: video
+          - type: mkdir_move
+            params:
+              base: /data/media/video
+              subdir_pattern: "{year}"
+        stop_processing: true
+
+      # 5 — Archives
+      - name: "Inbox: Archives → move to downloads"
+        enabled: true
+        match: any
+        conditions:
+          - attribute: extension
+            operator: is
+            value: zip
+          - attribute: extension
+            operator: is
+            value: tar.gz
+          - attribute: extension
+            operator: is
+            value: gz
+          - attribute: extension
+            operator: is
+            value: 7z
+        actions:
+          - type: move
+            params:
+              destination: /data/downloads/archives
+        stop_processing: true
+
+      # 6 — Catch-all: SJL rename anything else and log it
+      - name: "Inbox: Catch-all SJL rename"
+        enabled: true
+        conditions: []    # matches everything
+        actions:
+          - type: sjl_rename
+            params:
+              category: general
+              subcategory: file
+          - type: move
+            params:
+              destination: /data/unsorted
+          - type: log
+            params:
+              message: "Catch-all processed: {full_name}"
+        stop_processing: true
+
+  # ── Downloads: clean up old files ────────────────────────────────────────
+  - path: /data/downloads
+    enabled: true
+    recursive: false
+    delay_seconds: 5
+
+    rules:
+      - name: "Downloads: large files > 500 MB → warn via log"
+        enabled: true
+        conditions:
+          - attribute: size_mb
+            operator: greater_than
+            value: "500"
+        actions:
+          - type: log
+            params:
+              message: "LARGE FILE WARNING: {full_name} ({size_mb} MB)"
+        stop_processing: false   # keep processing other rules
+
+  # ── TagBack asset watch ───────────────────────────────────────────────────
+  - path: /data/tagback/incoming
+    enabled: true
+    recursive: false
+    delay_seconds: 3
+
+    rules:
+      - name: "TagBack: ingest new asset"
+        enabled: true
+        conditions: []
+        actions:
+          - type: sjl_rename
+            params:
+              category: tagback
+              subcategory: asset
+          - type: run_script
+            params:
+              # Calls TagBack ingest webhook on n8n
+              script: |
+                curl -s -X POST https://n8n.shannonjlove.cloud/webhook/tagback-ingest \
+                  -H "Content-Type: application/json" \
+                  -d "{\"file\":\"$FW_FILE\",\"name\":\"$FW_NAME\",\"ext\":\"$FW_EXT\"}"
+        stop_processing: true

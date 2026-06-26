@@ -1,0 +1,27 @@
+[Unit]
+Description=FileWarden – Hazel-style file automation daemon
+After=network-online.target
+
+[Container]
+Image=localhost/filewarden:latest
+ContainerName=filewarden
+AutoUpdate=local
+Network=sjl-infra.network
+
+Volume=/opt/filewarden/config.yaml:/etc/filewarden/config.yaml:ro,z
+Volume=/var/log/filewarden:/var/log/filewarden:z
+Volume=/var/lib/filewarden:/var/lib/filewarden:z
+
+Volume=/data/inbox:/data/inbox:z
+Volume=/data/documents:/data/documents:z
+Volume=/data/media:/data/media:z
+Volume=/data/downloads:/data/downloads:z
+Volume=/data/tagback:/data/tagback:z
+Volume=/data/unsorted:/data/unsorted:z
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

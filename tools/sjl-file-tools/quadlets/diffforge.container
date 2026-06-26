@@ -1,0 +1,23 @@
+[Unit]
+Description=DiffForge – DeltaWalker-style web diff tool
+After=network-online.target
+
+[Container]
+Image=localhost/diffforge:latest
+ContainerName=diffforge
+AutoUpdate=local
+Network=sjl-infra.network
+
+PublishPort=127.0.0.1:8087:8082
+
+Volume=/data:/data:ro,z
+
+Environment=DF_PORT=8082
+Environment=DF_ALLOW_PATHS=/data
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,24 @@
+[Unit]
+Description=HookVault – Hookmark-style bidirectional linking API
+After=network-online.target
+
+[Container]
+Image=localhost/hookvault:latest
+ContainerName=hookvault
+AutoUpdate=local
+Network=sjl-infra.network
+
+PublishPort=127.0.0.1:8086:8080
+
+Volume=/data/hookvault:/data/hookvault:z
+
+Environment=HV_DB=/data/hookvault/vault.db
+Environment=HV_BASE_URL=https://admin.shannonjlove.cloud/hooks
+Environment=HV_PORT=8080
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
