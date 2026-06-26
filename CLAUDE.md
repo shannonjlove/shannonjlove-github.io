@@ -582,11 +582,286 @@ FileWarden has no web UI — background daemon only.
 
 ---
 
+## BookStack Sync (CLAUDE.md live updates)
+
+**Script:** `tools/sjl-file-tools/bookstack_sync.py`  
+**Deps:** `requests>=2.31.0`, `pyyaml==6.0.1`, `click==8.1.7`
+
+BookStack is a self-hosted wiki/documentation platform with a full REST API.
+`bookstack_sync.py` keeps CLAUDE.md (and other Markdown files) live-synced with
+a BookStack page — push on save, pull to local, or run as a watcher.
+
+**Environment variables:**
+```
+BS_URL             https://docs.shannonjlove.cloud   # BookStack instance
+BS_TOKEN_ID        API token ID (from Profile → API Tokens)
+BS_TOKEN_SECRET    API token secret
+BS_PAGE_ID         Target page ID (optional; can be embedded in frontmatter)
+BS_BOOK_ID         Default book for new page creation
+BS_CHAPTER_ID      Default chapter for new page creation (overrides book)
+```
+
+**Auth header:** `Authorization: Token {token_id}:{token_secret}`
+
+**CLI:**
+```bash
+# Push CLAUDE.md to its BookStack page (page_id from frontmatter or BS_PAGE_ID)
+python bookstack_sync.py push CLAUDE.md
+
+# Watch and push on every save (5s poll)
+python bookstack_sync.py watch CLAUDE.md --interval 5
+
+# Pull page 42 down to a local file
+python bookstack_sync.py pull --page-id 42 --output CLAUDE.md
+
+# List all pages in book 1
+python bookstack_sync.py list-pages --book-id 1
+```
+
+**Frontmatter embedding:** On first push to a new page, the script writes the
+assigned page ID back into the file's YAML frontmatter so future pushes are
+idempotent without needing `BS_PAGE_ID`:
+```yaml
+---
+bookstack_page_id: 42
+title: SJL Infrastructure
+---
+```
+
+**BookStack REST API reference:**
+| Method | Path | Action |
+|---|---|---|
+| `GET` | `/api/pages` | List all pages |
+| `POST` | `/api/pages` | Create page (requires `book_id` or `chapter_id`, `name`, `html` or `markdown`) |
+| `GET` | `/api/pages/{id}` | Get page |
+| `PUT` | `/api/pages/{id}` | Update page |
+| `DELETE` | `/api/pages/{id}` | Delete page |
+| `GET` | `/api/pages/{id}/export/markdown` | Export as Markdown |
+| `GET` | `/api/books` | List books |
+| `GET` | `/api/chapters` | List chapters |
+| `GET` | `/api/search?query=` | Full-text search |
+
+---
+
+## Raindrop.io Integration
+
+**Reference:** https://raindrop.io — bookmark manager with REST API and MCP server.
+
+### Raindrop.io REST API
+
+**Base URL:** `https://api.raindrop.io/rest/v1`  
+**Auth:** `Authorization: Bearer {RAINDROP_TOKEN}`  
+**Rate limit:** 120 requests/minute per user
+
+**Key raindrop (bookmark) fields:**
+```json
+{
+  "_id":        12345,
+  "link":       "https://example.com",
+  "title":      "Example",
+  "excerpt":    "Page description",
+  "note":       "My personal note",
+  "tags":       ["tag1", "tag2"],
+  "type":       "link|article|image|video|document|audio",
+  "cover":      "https://...",
+  "collection": {"$id": 0},
+  "important":  false,
+  "highlights": [],
+  "domain":     "example.com",
+  "created":    "ISO8601",
+  "lastUpdate": "ISO8601"
+}
+```
+
+**Raindrop endpoints:**
+| Method | Path | Action |
+|---|---|---|
+| `GET` | `/raindrop/{id}` | Get single bookmark |
+| `POST` | `/raindrop` | Create bookmark (send `pleaseParse:{}` for auto metadata) |
+| `PUT` | `/raindrop/{id}` | Update bookmark |
+| `DELETE` | `/raindrop/{id}` | Move to Trash |
+| `GET` | `/raindrops/{collection_id}` | List/search collection (`?search=&page=&perpage=`) |
+| `POST` | `/raindrops` | Bulk create |
+| `PUT` | `/raindrops` | Bulk update |
+| `DELETE` | `/raindrops/{collection_id}` | Bulk delete from collection |
+| `GET` | `/collections` | List all collections |
+| `POST` | `/collection` | Create collection |
+| `GET` | `/tags/{collection_id}` | List tags in collection |
+
+**Collection IDs:** `0` = Unsorted, `-1` = All, `-99` = Trash, `-1` with search = all
+
+**MCP server (Pro users):**
+- Endpoint: `https://api.raindrop.io/rest/v2/ai/mcp`
+- Transport: Streamable HTTP
+- Auth: OAuth 2.1 or Bearer token
+- Claude Code can connect to this MCP server to manage bookmarks in conversation
+
+### HookVault ↔ Raindrop Integration
+
+**Environment variable:** `RAINDROP_TOKEN`, `RAINDROP_AUTO_PUSH=1`
+
+**New endpoints in HookVault:**
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/sync/raindrop/push/{hook_id}` | Push single URL item to Raindrop |
+| `POST` | `/sync/raindrop/import` | Import from Raindrop collection into HookVault |
+| `GET` | `/sync/raindrop/collections` | List Raindrop collections |
+
+**Auto-push:** Set `RAINDROP_AUTO_PUSH=1` to push every new `kind=url` item to Raindrop
+automatically. The Raindrop `_id` is stored in the item's `meta.raindrop_id` for future syncs.
+
+**CLI:**
+```bash
+python hookvault.py raindrop-import --collection-id 0 --overwrite
+python hookvault.py raindrop-import --collection-id 12345 --tag work --tag project
+```
+
+### Raindrop Automations
+
+Raindrop.io supports automation via **n8n**, **Make.com**, and **Zapier**:
+
+**n8n (self-hosted, running on Nexus):**
+- Trigger: "New Bookmark Added", "Bookmark Modified"
+- Actions: create/update/delete raindrops, search, manage collections
+- SJL n8n instance: `https://n8n.shannonjlove.cloud`
+
+**Common automation flows:**
+1. FileWarden `run_script` → n8n webhook → Raindrop bookmark creation
+2. Raindrop new bookmark → n8n → HookVault `/shortcut/add-url`
+3. Raindrop new bookmark → n8n → BookStack page update
+4. Raindrop tag applied → n8n → HookVault tag sync
+
+---
+
+## iOS Automation — Scriptable & Apple Shortcuts
+
+### Scriptable (https://scriptable.app)
+
+JavaScript automation app for iOS/iPadOS. Uses Apple's JavaScriptCore (ES6+).
+Scripts run from the app, home screen widgets, Siri, or Share Sheet.
+
+**Key APIs:**
+| Module | What it does |
+|---|---|
+| `Request` | HTTP GET/POST/PUT/DELETE/PATCH with headers, JSON body, response parsing |
+| `FileManager` | Read/write files in iCloud Drive, local storage, and Files.app |
+| `Keychain` | Securely store API tokens and secrets |
+| `Pasteboard` | Read/write clipboard |
+| `CallbackURL` | x-callback-url scheme — call other apps and get responses |
+| `URLScheme` | Open any URL scheme (including `hook://`, `hookmark://`) |
+| `Safari` | Open URLs in Safari or SFSafariViewController |
+| `ListWidget` | iOS home screen widgets with text, images, stacks |
+| `UITable` | Scrollable table UI with rows and cells |
+| `Alert` | Dialogs with text fields, buttons |
+| `ShareSheet` | Share content from/to other apps |
+| `Notification` | Schedule local notifications |
+| `Calendar` / `Reminder` | Read/write calendar events and reminders |
+| `Location` | GPS coordinates |
+| `Photos` | Access photo library |
+| `Mail` / `Message` | Send email or SMS |
+| `Speech` | Text-to-speech |
+| `Device` | Device info, screen size, battery, language |
+| `Timer` | Delayed execution |
+| `DrawContext` | Draw images, generate charts |
+
+**HTTP request pattern:**
+```javascript
+const req = new Request("https://hooks.shannonjlove.cloud/shortcut/recent");
+req.method = "GET";
+const data = await req.loadJSON();
+```
+
+**POST with JSON:**
+```javascript
+const req = new Request("https://hooks.shannonjlove.cloud/shortcut/add-url?url=https://example.com&title=Example");
+req.method = "POST";
+const result = await req.loadJSON();
+```
+
+**Keychain (store API tokens securely):**
+```javascript
+Keychain.set("hookvault_token", "your-token-here");
+const token = Keychain.get("hookvault_token");
+```
+
+**SJL Scriptable script:** `tools/sjl-file-tools/ios/HookVault.js`
+- Full menu-driven HookVault browser
+- Search, Recent, Add from Clipboard, Stats
+- Opens items in Hookmark PAL via `hook://` URLs
+- Works from Share Sheet (adds shared URL to HookVault)
+
+### Apple Shortcuts (iOS + macOS)
+
+Shortcuts can call any REST API via "Get Contents of URL":
+
+**GET request:**
+1. "Get Contents of URL" → URL = `https://hooks.shannonjlove.cloud/shortcut/recent`
+2. "Get Dictionary Value" → from result, key = items
+
+**POST with JSON body:**
+1. "Get Contents of URL"
+   - URL: `https://hooks.shannonjlove.cloud/shortcut/add-url`
+   - Method: POST
+   - Headers: `Content-Type: application/json`
+   - Request Body: JSON, keys: `url`, `title`, `tags`
+
+**Useful Shortcuts for HookVault:**
+- "Hook current URL" — Share Sheet → Shortcuts → POST to `/shortcut/add-url`
+- "Search hooks" — Ask for input → GET `/shortcut/search?q={input}`
+- "Recent hooks" — GET `/shortcut/recent` → show list → open selection
+
+**macOS note:** Automations tab is unavailable on macOS (available on iOS/iPadOS only).
+On macOS, Shortcuts run manually or from menu bar, keyboard shortcut, or Siri.
+
+### Hookmark PAL (iOS)
+
+**Reference:** https://hookproductivity.com/iphone-ipad/
+
+Hookmark PAL is the iOS companion to Hookmark for Mac. Syncs via iCloud.
+
+**Capabilities:**
+- Browse and navigate bidirectional links created on any device
+- Create new hooks (bidirectional links) on iOS
+- Tag and pin bookmarks
+- Search by tag, title, URL
+- View pinned items across apps
+- Open `hook://` URLs directly
+
+**hook:// URL scheme (opens in Hookmark PAL):**
+```
+hook://file/<percent-encoded-posix-path>   # open file by path
+hook://search/<encoded-query>              # trigger Spotlight search
+```
+
+**HookVault ↔ Hookmark PAL integration:**
+HookVault exposes these iOS-compatible endpoints:
+
+| Endpoint | Use in PAL / Shortcuts |
+|---|---|
+| `GET /hook-url/{hook_id}` | Get `hook://` URL for any item |
+| `GET /shortcut/recent?limit=20` | Recent items list for Shortcuts |
+| `GET /shortcut/search?q=&tag=&kind=` | Search for Shortcuts |
+| `POST /shortcut/add-url?url=&title=&tags=` | Quick-add (no JSON body needed) |
+
+**Shortcut to open item in Hookmark PAL:**
+1. GET `/shortcut/search?q=<input>` → parse JSON array
+2. Choose item from list (repeat menu)
+3. GET `/hook-url/{hook_id}` → get `hook_url`
+4. Open `hook_url` — Hookmark PAL opens with that item's context
+
+---
+
 ## n8n Integration
 
-- **TagBack ingest webhook:** `POST https://n8n.shannonjlove.cloud/webhook/tagback-ingest`
-  - JSON body: `{"file": "$FW_FILE", "name": "$FW_NAME", "ext": "$FW_EXT"}`
-  - Triggered by FileWarden `run_script` action on `/data/tagback/incoming`
+**Instance:** `https://n8n.shannonjlove.cloud`
+
+**Active webhooks:**
+- `POST /webhook/tagback-ingest` — FileWarden TagBack: `{"file": "$FW_FILE", "name": "$FW_NAME", "ext": "$FW_EXT"}`
+
+**Planned automation flows:**
+- Raindrop new bookmark → HookVault import
+- HookVault new item → BookStack page update
+- FileWarden processed file → HookVault register-file
 
 ---
 
@@ -595,4 +870,5 @@ FileWarden has no web UI — background daemon only.
 - Always work on feature branches; never push directly to `main`
 - `tools/sjl-file-tools/` in this repo is the source of truth for all three services
 - When extending any SJL tool, consult the "NOT yet implemented" list above first
+- `RAINDROP_TOKEN` and `BS_TOKEN_ID`/`BS_TOKEN_SECRET` must be set in the container env
 - Production SHA256: `fd374d5ac914192de693c76e8ee205645e7bdba8ef5822bc7572dd5175d1d410`

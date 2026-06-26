@@ -4,6 +4,11 @@ HookVault — server-side Hookmark replacement
 Bidirectional linking between files, URLs, notes, and any URI.
 Runs as a FastAPI REST service. CLI included at bottom.
 
+Integrations:
+  - Raindrop.io: push URL items to Raindrop; import Raindrop collections
+  - Hookmark PAL (iOS): hook:// URL generation, Apple Shortcuts-compatible JSON
+  - iOS Scriptable: machine-readable JSON endpoints for automation scripts
+
 Usage (server):
     uvicorn hookvault:app --host 0.0.0.0 --port 8080
 
@@ -12,6 +17,14 @@ Usage (CLI):
     python hookvault.py link hook:abc123 hook:def456
     python hookvault.py show hook:abc123
     python hookvault.py search --tag project
+    python hookvault.py raindrop-import --collection-id 0
+
+Environment variables:
+    HV_DB              Path to SQLite database (default: /data/hookvault/vault.db)
+    HV_BASE_URL        Public base URL for hook:// links
+    HV_PORT            Server port (default: 8080)
+    RAINDROP_TOKEN     Raindrop.io API Bearer token (for sync features)
+    RAINDROP_AUTO_PUSH Set to "1" to auto-push URL items to Raindrop on creation
 """
 
 from __future__ import annotations
@@ -26,6 +39,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import quote
 
 import click
 import uvicorn
@@ -36,9 +50,13 @@ from pydantic import BaseModel
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
-DB_PATH   = Path(os.environ.get("HV_DB",   "/data/hookvault/vault.db"))
-BASE_URL  = os.environ.get("HV_BASE_URL",  "https://admin.shannonjlove.cloud/hooks")
-PORT      = int(os.environ.get("HV_PORT",  "8080"))
+DB_PATH         = Path(os.environ.get("HV_DB",   "/data/hookvault/vault.db"))
+BASE_URL        = os.environ.get("HV_BASE_URL",  "https://admin.shannonjlove.cloud/hooks")
+PORT            = int(os.environ.get("HV_PORT",  "8080"))
+RAINDROP_TOKEN  = os.environ.get("RAINDROP_TOKEN", "")
+RAINDROP_AUTO   = os.environ.get("RAINDROP_AUTO_PUSH", "0") == "1"
+
+RAINDROP_API    = "https://api.raindrop.io/rest/v1"
 
 # ─── Database ────────────────────────────────────────────────────────────────
 
@@ -88,6 +106,84 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_links_src ON links(src_hook);
             CREATE INDEX IF NOT EXISTS idx_links_dst ON links(dst_hook);
         """)
+
+
+# ─── Raindrop.io client ──────────────────────────────────────────────────────
+
+def _raindrop_headers() -> dict:
+    if not RAINDROP_TOKEN:
+        raise HTTPException(503, "RAINDROP_TOKEN not configured")
+    return {"Authorization": f"Bearer {RAINDROP_TOKEN}",
+            "Content-Type": "application/json"}
+
+
+def raindrop_create(url: str, title: str, tags: list,
+                    note: str = "", collection_id: int = 0) -> dict:
+    """Push a URL bookmark to Raindrop.io. Returns the created raindrop object."""
+    import requests
+    payload = {
+        "link":       url,
+        "title":      title,
+        "excerpt":    note,
+        "tags":       tags,
+        "collection": {"$id": collection_id},
+        "pleaseParse": {},  # ask Raindrop to auto-fetch metadata
+    }
+    r = requests.post(f"{RAINDROP_API}/raindrop",
+                      headers=_raindrop_headers(), json=payload, timeout=15)
+    r.raise_for_status()
+    return r.json().get("item", {})
+
+
+def raindrop_update(raindrop_id: int, title: str, tags: list, note: str = "") -> dict:
+    import requests
+    payload = {"title": title, "tags": tags, "excerpt": note}
+    r = requests.put(f"{RAINDROP_API}/raindrop/{raindrop_id}",
+                     headers=_raindrop_headers(), json=payload, timeout=15)
+    r.raise_for_status()
+    return r.json().get("item", {})
+
+
+def raindrop_search(search: str = "", collection_id: int = 0,
+                    tags: Optional[list] = None, page: int = 0) -> list:
+    import requests
+    params: dict = {"search": search, "page": page, "perpage": 50}
+    if tags:
+        params["search"] = " ".join(f"#{t}" for t in tags) + f" {search}".strip()
+    r = requests.get(f"{RAINDROP_API}/raindrops/{collection_id}",
+                     headers=_raindrop_headers(), params=params, timeout=15)
+    r.raise_for_status()
+    return r.json().get("items", [])
+
+
+def raindrop_get_collections() -> list:
+    import requests
+    r = requests.get(f"{RAINDROP_API}/collections",
+                     headers=_raindrop_headers(), timeout=15)
+    r.raise_for_status()
+    return r.json().get("items", [])
+
+
+# ─── hook:// URL helpers ──────────────────────────────────────────────────────
+
+def make_hook_url(item: dict) -> str:
+    """
+    Generate a hook:// URL for use with Hookmark PAL on iOS/Mac.
+    Files get hook://file/<encoded-path>, URLs pass through directly,
+    notes get a hookmark.net universal link.
+    """
+    kind = item.get("kind", "")
+    path = item.get("path")
+    url  = item.get("url")
+
+    if kind == "file" and path:
+        encoded = quote(path, safe="")
+        return f"hook://file/{encoded}"
+    if url:
+        return url
+    # Fallback: HookVault resolve URL (readable by Shortcuts/Scriptable)
+    hook_id = item.get("hook_id", "")
+    return f"{BASE_URL}/items/{hook_id}"
 
 
 # ─── Core helpers ─────────────────────────────────────────────────────────────
@@ -177,6 +273,12 @@ class ItemPatch(BaseModel):
     meta:  Optional[dict]     = None
 
 
+class RaindropImportIn(BaseModel):
+    collection_id: int      = 0     # 0 = Unsorted, -1 = All
+    tags_filter:   List[str] = []
+    overwrite:     bool      = False  # update existing items if hook_id matches
+
+
 # ── Items ────────────────────────────────────────────────────────────────────
 
 @app.post("/items", status_code=201)
@@ -186,6 +288,9 @@ async def create_item(body: ItemIn):
     now     = datetime.utcnow().isoformat()
     item_id = str(uuid.uuid4())
     chash   = file_hash(Path(body.path)) if body.path else None
+
+    # Merge raindrop_id from meta if provided externally
+    meta = dict(body.meta)
 
     with db() as conn:
         existing = conn.execute(
@@ -200,12 +305,29 @@ async def create_item(body: ItemIn):
             VALUES (?,?,?,?,?,?,?,?,?,?,?)
         """, (
             item_id, hook_id, body.kind, body.path, body.url, body.title,
-            chash, json.dumps(body.tags), json.dumps(body.meta), now, now,
+            chash, json.dumps(body.tags), json.dumps(meta), now, now,
         ))
 
     with db() as conn:
         row = conn.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
-    return row_to_dict(row)
+    item = row_to_dict(row)
+
+    # Auto-push URL items to Raindrop.io if configured
+    if RAINDROP_AUTO and RAINDROP_TOKEN and body.kind == "url" and body.url:
+        try:
+            rd = raindrop_create(body.url, body.title, body.tags)
+            # Store raindrop_id in meta for future sync
+            new_meta = {**meta, "raindrop_id": rd.get("_id")}
+            with db() as conn:
+                conn.execute(
+                    "UPDATE items SET meta=? WHERE hook_id=?",
+                    (json.dumps(new_meta), hook_id),
+                )
+            item["meta"] = new_meta
+        except Exception:
+            pass  # Non-fatal: Raindrop push failure doesn't block item creation
+
+    return item
 
 
 @app.get("/items/{hook_id}")
@@ -349,6 +471,198 @@ async def stats():
         ).fetchall()
     return {"items": n_items, "links": n_links,
             "by_kind": {r["kind"]: r["n"] for r in kinds}}
+
+
+# ── Raindrop.io Integration ───────────────────────────────────────────────────
+
+@app.post("/sync/raindrop/push/{hook_id}", status_code=200)
+async def push_to_raindrop(hook_id: str, collection_id: int = 0):
+    """Push a single HookVault URL item to Raindrop.io."""
+    with db() as conn:
+        row = conn.execute("SELECT * FROM items WHERE hook_id=?", (hook_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, "Item not found")
+    item = row_to_dict(row)
+    if item["kind"] != "url" or not item.get("url"):
+        raise HTTPException(400, "Only URL items can be pushed to Raindrop")
+
+    meta = item.get("meta") or {}
+    existing_id = meta.get("raindrop_id")
+
+    try:
+        if existing_id:
+            rd = raindrop_update(existing_id, item["title"], item.get("tags") or [])
+        else:
+            rd = raindrop_create(
+                item["url"], item["title"], item.get("tags") or [],
+                collection_id=collection_id,
+            )
+            new_meta = {**meta, "raindrop_id": rd.get("_id")}
+            with db() as conn:
+                conn.execute("UPDATE items SET meta=? WHERE hook_id=?",
+                             (json.dumps(new_meta), hook_id))
+    except Exception as e:
+        raise HTTPException(502, f"Raindrop API error: {e}")
+
+    return {"hook_id": hook_id, "raindrop_id": rd.get("_id"), "action": "updated" if existing_id else "created"}
+
+
+@app.post("/sync/raindrop/import")
+async def import_from_raindrop(body: RaindropImportIn):
+    """
+    Pull bookmarks from a Raindrop.io collection and register them as HookVault items.
+    Returns counts of created vs. skipped items.
+    """
+    try:
+        raindrops = raindrop_search(
+            collection_id=body.collection_id,
+            tags=body.tags_filter or None,
+        )
+    except Exception as e:
+        raise HTTPException(502, f"Raindrop API error: {e}")
+
+    created = skipped = 0
+    now = datetime.utcnow().isoformat()
+
+    for rd in raindrops:
+        url   = rd.get("link", "")
+        title = rd.get("title", url)
+        tags  = rd.get("tags", [])
+        rd_id = rd.get("_id")
+
+        if not url:
+            continue
+
+        hook_id = make_hook_id(url)
+        with db() as conn:
+            existing = conn.execute(
+                "SELECT hook_id FROM items WHERE hook_id=?", (hook_id,)
+            ).fetchone()
+            if existing and not body.overwrite:
+                skipped += 1
+                continue
+
+            meta = json.dumps({"raindrop_id": rd_id,
+                               "excerpt": rd.get("excerpt", ""),
+                               "domain":  rd.get("domain", "")})
+            if existing:
+                conn.execute(
+                    "UPDATE items SET title=?,tags=?,meta=?,updated_at=? WHERE hook_id=?",
+                    (title, json.dumps(tags), meta, now, hook_id),
+                )
+            else:
+                conn.execute("""
+                    INSERT INTO items
+                      (id,hook_id,kind,path,url,title,content_hash,tags,meta,created_at,updated_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                """, (str(uuid.uuid4()), hook_id, "url", None, url,
+                      title, None, json.dumps(tags), meta, now, now))
+            created += 1
+
+    return {"imported": created, "skipped": skipped,
+            "collection_id": body.collection_id}
+
+
+@app.get("/sync/raindrop/collections")
+async def list_raindrop_collections():
+    """List all Raindrop.io collections."""
+    try:
+        cols = raindrop_get_collections()
+    except Exception as e:
+        raise HTTPException(502, f"Raindrop API error: {e}")
+    return [{"id": c.get("_id"), "title": c.get("title"),
+             "count": c.get("count", 0)} for c in cols]
+
+
+# ── iOS / Hookmark PAL / Apple Shortcuts ──────────────────────────────────────
+
+@app.get("/hook-url/{hook_id}")
+async def get_hook_url(hook_id: str):
+    """
+    Return the hook:// URL for this item — for use with Hookmark PAL on iOS/Mac.
+    Files return hook://file/<encoded-posix-path>.
+    URLs return the URL directly.
+    """
+    with db() as conn:
+        row = conn.execute("SELECT * FROM items WHERE hook_id=?", (hook_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, "Item not found")
+    item = row_to_dict(row)
+    return {"hook_id": hook_id, "hook_url": make_hook_url(item), "title": item["title"]}
+
+
+@app.get("/shortcut/recent")
+async def shortcut_recent(limit: int = 20):
+    """
+    iOS Shortcuts / Scriptable compatible endpoint.
+    Returns a flat list of recent items — designed for use in Shortcuts
+    'Get Contents of URL' actions and Scriptable scripts.
+    Each item includes hook_url for direct Hookmark PAL handoff.
+    """
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM items ORDER BY updated_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return [
+        {
+            "hook_id":  r["hook_id"],
+            "title":    r["title"],
+            "kind":     r["kind"],
+            "url":      r["url"],
+            "path":     r["path"],
+            "tags":     json.loads(r["tags"] or "[]"),
+            "hook_url": make_hook_url(dict(r)),
+            "updated":  r["updated_at"],
+        }
+        for r in rows
+    ]
+
+
+@app.get("/shortcut/search")
+async def shortcut_search(q: str = "", tag: str = "", kind: str = "", limit: int = 50):
+    """
+    iOS Shortcuts / Scriptable search — returns hook_url in every result.
+    Call from Shortcuts 'Get Contents of URL' with query parameters.
+    """
+    sql, params = "SELECT * FROM items WHERE 1=1", []
+    if q:
+        sql += " AND (title LIKE ? OR path LIKE ? OR url LIKE ?)"
+        params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
+    if tag:
+        sql += ' AND tags LIKE ?'
+        params.append(f'%"{tag}"%')
+    if kind:
+        sql += " AND kind = ?"
+        params.append(kind)
+    sql += " ORDER BY updated_at DESC LIMIT ?"
+    params.append(limit)
+    with db() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {
+            "hook_id":  r["hook_id"],
+            "title":    r["title"],
+            "kind":     r["kind"],
+            "url":      r["url"],
+            "path":     r["path"],
+            "tags":     json.loads(r["tags"] or "[]"),
+            "hook_url": make_hook_url(dict(r)),
+        }
+        for r in rows
+    ]
+
+
+@app.post("/shortcut/add-url")
+async def shortcut_add_url(url: str, title: str = "", tags: str = ""):
+    """
+    iOS Shortcuts / Scriptable quick-add endpoint.
+    Accepts flat query parameters (no JSON body) for easy Shortcuts integration.
+    Push to Raindrop.io automatically if RAINDROP_AUTO_PUSH=1.
+    """
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    effective_title = title or url
+    body = ItemIn(kind="url", url=url, title=effective_title, tags=tag_list)
+    return await create_item(body)
 
 
 # ── Web UI (minimal) ─────────────────────────────────────────────────────────
@@ -574,6 +888,57 @@ def search(q, tag, kind):
         item = row_to_dict(r)
         tags_str = ",".join(item.get("tags") or [])
         click.echo(f"{item['hook_id']}  {item['title']:<50}  [{item['kind']}]  {tags_str}")
+
+
+@cli.command("raindrop-import")
+@click.option("--collection-id", "-c", default=0, type=int,
+              help="Raindrop collection ID (0=Unsorted, -1=All)")
+@click.option("--tag", "-t", multiple=True, help="Filter by tag(s)")
+@click.option("--overwrite", is_flag=True, help="Update existing items")
+def raindrop_import_cmd(collection_id, tag, overwrite):
+    """Import bookmarks from Raindrop.io into HookVault."""
+    if not RAINDROP_TOKEN:
+        click.echo("ERROR: RAINDROP_TOKEN not set"); return
+    try:
+        raindrops = raindrop_search(collection_id=collection_id,
+                                   tags=list(tag) or None)
+    except Exception as e:
+        click.echo(f"Raindrop API error: {e}"); return
+
+    now = datetime.utcnow().isoformat()
+    created = skipped = 0
+    init_db()
+    for rd in raindrops:
+        url   = rd.get("link", "")
+        title = rd.get("title", url)
+        tags  = rd.get("tags", [])
+        rd_id = rd.get("_id")
+        if not url:
+            continue
+        hook_id = make_hook_id(url)
+        meta_s = json.dumps({"raindrop_id": rd_id, "excerpt": rd.get("excerpt", ""),
+                              "domain": rd.get("domain", "")})
+        with db() as conn:
+            existing = conn.execute(
+                "SELECT hook_id FROM items WHERE hook_id=?", (hook_id,)
+            ).fetchone()
+            if existing and not overwrite:
+                skipped += 1
+                continue
+            if existing:
+                conn.execute(
+                    "UPDATE items SET title=?,tags=?,meta=?,updated_at=? WHERE hook_id=?",
+                    (title, json.dumps(tags), meta_s, now, hook_id),
+                )
+            else:
+                conn.execute("""
+                    INSERT INTO items
+                      (id,hook_id,kind,path,url,title,content_hash,tags,meta,created_at,updated_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                """, (str(uuid.uuid4()), hook_id, "url", None, url,
+                      title, None, json.dumps(tags), meta_s, now, now))
+            created += 1
+    click.echo(f"Imported {created}, skipped {skipped}")
 
 
 @cli.command("serve")
