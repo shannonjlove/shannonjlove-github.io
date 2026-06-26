@@ -6,10 +6,56 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/user/shannonjlove-github.io/.claude/session-start-oci-config.sh"
+            "command": "bash -c 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" && bash .claude/session-start-nexus.sh'"
           }
         ]
       }
     ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(mkfs:*)",
+      "Bash(dd:*)",
+      "Bash(systemctl:*)",
+      "Bash(loginctl:*)",
+      "Bash(podman rm:*)",
+      "Bash(podman rmi:*)",
+      "Bash(podman volume rm:*)",
+      "Bash(podman system prune:*)",
+      "Bash(tailscale:*)",
+      "Bash(ufw:*)",
+      "Bash(iptables:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(cat:*.env*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.ssh/**)",
+      "Read(/etc/**)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(podman:*)",
+      "Bash(npm:*)",
+      "Bash(pip:*)",
+      "Edit(/home/sjl/**)"
+    ],
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Skill"
+    ],
+    "defaultMode": "default"
   }
 }
