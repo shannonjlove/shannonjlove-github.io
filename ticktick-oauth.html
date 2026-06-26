@@ -8,124 +8,255 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #f0f4f8;
       min-height: 100vh;
-      padding: 20px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px;
     }
     .card {
       background: #fff;
-      border-radius: 12px;
-      padding: 40px 32px;
-      max-width: 420px;
+      border-radius: 14px;
+      padding: 36px 28px;
+      max-width: 480px;
       width: 100%;
-      text-align: center;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.09);
     }
-    .icon { font-size: 48px; margin-bottom: 20px; }
-    h1 { font-size: 1.4em; color: #1a1a1a; margin-bottom: 10px; }
-    p { color: #666; font-size: 0.95em; line-height: 1.6; margin-bottom: 20px; }
-    .code-box {
-      background: #f8f8f8;
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      padding: 12px 16px;
-      font-family: monospace;
-      font-size: 0.85em;
-      word-break: break-all;
-      color: #333;
+    .icon { font-size: 44px; margin-bottom: 16px; text-align: center; }
+    h1 { font-size: 1.35em; color: #1a1a1a; margin-bottom: 8px; text-align: center; }
+    .subtitle { color: #777; font-size: 0.9em; text-align: center; margin-bottom: 28px; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step; margin-bottom: 28px; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 14px;
       margin-bottom: 20px;
-      text-align: left;
+      align-items: flex-start;
     }
+    .steps li::before {
+      content: counter(step);
+      background: #4a9eff;
+      color: #fff;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; color: #1a1a1a; margin-bottom: 4px; font-size: 0.95em; }
+    .step-body p { color: #666; font-size: 0.88em; line-height: 1.6; margin-bottom: 6px; }
+    .step-body a { color: #4a9eff; text-decoration: none; }
+    .step-body a:hover { text-decoration: underline; }
+
+    /* Redirect URI display */
+    .uri-box {
+      background: #f5f8ff;
+      border: 1px solid #c8deff;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-family: monospace;
+      font-size: 0.82em;
+      color: #2a5db0;
+      word-break: break-all;
+      margin-top: 6px;
+      position: relative;
+    }
+    .copy-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8em;
+      color: #4a9eff;
+      margin-top: 4px;
+      padding: 0;
+    }
+
+    /* Form */
+    .divider { border: none; border-top: 1px solid #eee; margin: 24px 0; }
+    label { display: block; font-size: 0.85em; font-weight: 600; color: #444; margin-bottom: 6px; }
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 7px;
+      padding: 10px 13px;
+      font-size: 0.92em;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    input[type="text"]:focus { border-color: #4a9eff; }
     .btn {
-      display: inline-block;
+      display: block;
+      width: 100%;
       background: #4a9eff;
       color: #fff;
       text-decoration: none;
       border: none;
       border-radius: 8px;
-      padding: 12px 28px;
+      padding: 13px;
       font-size: 1em;
       cursor: pointer;
+      text-align: center;
       transition: background 0.2s;
     }
     .btn:hover { background: #2280e0; }
-    .error { color: #c0392b; }
-    .success-icon { color: #27ae60; }
+    .btn:disabled { background: #b0cff5; cursor: default; }
+
+    /* Callback states */
+    .state-icon { font-size: 52px; text-align: center; margin-bottom: 16px; }
+    .success { color: #27ae60; }
+    .error-text { color: #c0392b; }
+    .code-box {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-family: monospace;
+      font-size: 0.83em;
+      word-break: break-all;
+      color: #333;
+      margin: 16px 0;
+      text-align: left;
+    }
+    .hint { font-size: 0.82em; color: #999; text-align: center; margin-top: 16px; }
   </style>
 </head>
 <body>
 <div class="card" id="card">
-  <div class="icon" id="icon">⏳</div>
-  <h1 id="title">Processing…</h1>
-  <p id="message">Please wait while we complete authorization.</p>
+  <!-- Content injected by JS -->
 </div>
 
 <script>
 (function () {
+  var REDIRECT_URI = 'https://shannonjlove.com/ticktick-oauth.html';
+  var APP_SCHEME   = 'shannonjloveapp';
+
   var params = new URLSearchParams(window.location.search);
-  var code  = params.get('code');
-  var state = params.get('state');
-  var error = params.get('error');
+  var code   = params.get('code');
+  var state  = params.get('state');
+  var error  = params.get('error');
+  var card   = document.getElementById('card');
 
-  var icon    = document.getElementById('icon');
-  var title   = document.getElementById('title');
-  var message = document.getElementById('message');
-  var card    = document.getElementById('card');
-
+  /* ── 1. OAuth error returned from TickTick ── */
   if (error) {
-    icon.textContent    = '✗';
-    icon.className      = 'icon error';
-    title.textContent   = 'Authorization Denied';
-    message.textContent = 'TickTick reported an error: ' + error +
-      '. Please return to the app and try again.';
+    card.innerHTML =
+      '<div class="state-icon error-text">✗</div>' +
+      '<h1>Authorization Denied</h1>' +
+      '<p class="subtitle">TickTick returned an error: <strong>' + esc(error) + '</strong>.<br>' +
+      'Please go back to the app and try again.</p>';
     return;
   }
 
-  if (!code) {
-    icon.textContent    = '✗';
-    icon.className      = 'icon error';
-    title.textContent   = 'Missing Authorization Code';
-    message.textContent = 'No authorization code was received from TickTick.';
+  /* ── 2. Success — TickTick redirected back with a code ── */
+  if (code) {
+    var deep = APP_SCHEME + '://oauth/ticktick?code=' + encodeURIComponent(code) +
+               (state ? '&state=' + encodeURIComponent(state) : '');
+    window.location.href = deep;
+
+    setTimeout(function () {
+      card.innerHTML =
+        '<div class="state-icon success">✓</div>' +
+        '<h1>TickTick Connected!</h1>' +
+        '<p class="subtitle">Authorization successful. If the app didn\'t open automatically, ' +
+        'copy the code below and paste it into the app.</p>' +
+        '<div class="code-box" id="authCode">' + esc(code) + '</div>' +
+        '<button class="btn" id="copyBtn">Copy Code</button>' +
+        '<p class="hint">You can close this window once the code is copied.</p>';
+
+      document.getElementById('copyBtn').onclick = function () {
+        navigator.clipboard.writeText(code).then(function () {
+          document.getElementById('copyBtn').textContent = 'Copied!';
+          setTimeout(function () {
+            document.getElementById('copyBtn').textContent = 'Copy Code';
+          }, 2000);
+        });
+      };
+    }, 900);
     return;
   }
 
-  // Build the deep-link back into the iOS app.
-  // The URL scheme must match the CFBundleURLSchemes entry in your iOS app's Info.plist.
-  var appScheme   = 'shannonjloveapp';
-  var callbackUrl = appScheme + '://oauth/ticktick?code=' + encodeURIComponent(code) +
-    (state ? '&state=' + encodeURIComponent(state) : '');
+  /* ── 3. No code — show setup guide ── */
+  card.innerHTML =
+    '<div class="icon">🔗</div>' +
+    '<h1>Connect TickTick</h1>' +
+    '<p class="subtitle">You need a TickTick developer app before you can authorize.<br>' +
+    'Follow the steps below — it takes about 2 minutes.</p>' +
 
-  // Attempt to open the app.
-  window.location.href = callbackUrl;
+    '<ol class="steps">' +
 
-  // Fallback UI shown if the app doesn't open within ~1 second.
-  setTimeout(function () {
-    icon.textContent  = '✓';
-    icon.className    = 'icon success-icon';
-    title.textContent = 'TickTick Connected';
-    message.innerHTML =
-      'Your authorization was successful. ' +
-      'If the app didn\'t open automatically, copy the code below and paste it into the app.';
+    '<li><div class="step-body">' +
+      '<strong>Register a TickTick developer app</strong>' +
+      '<p>Log in to TickTick on desktop, then open the OAuth settings page:</p>' +
+      '<p><a href="https://ticktick.com/oauth/setting" target="_blank" rel="noopener">ticktick.com/oauth/setting →</a></p>' +
+      '<p>Click <em>Add App</em>, give it any name (e.g. "My iOS App"), and set the <strong>Redirect URI</strong> to exactly:</p>' +
+      '<div class="uri-box" id="uriBox">' + REDIRECT_URI + '</div>' +
+      '<button class="copy-btn" id="copyUri">Copy URI</button>' +
+    '</div></li>' +
 
-    var codeBox = document.createElement('div');
-    codeBox.className   = 'code-box';
-    codeBox.textContent = code;
-    card.appendChild(codeBox);
+    '<li><div class="step-body">' +
+      '<strong>Copy your Client ID</strong>' +
+      '<p>After saving the app, TickTick shows you a <strong>Client ID</strong> (and a Client Secret — save both). Paste the Client ID below.</p>' +
+    '</div></li>' +
 
-    var btn = document.createElement('button');
-    btn.className   = 'btn';
-    btn.textContent = 'Copy Code';
-    btn.onclick = function () {
-      navigator.clipboard.writeText(code).then(function () {
-        btn.textContent = 'Copied!';
-        setTimeout(function () { btn.textContent = 'Copy Code'; }, 2000);
-      });
-    };
-    card.appendChild(btn);
-  }, 1000);
+    '<li><div class="step-body">' +
+      '<strong>Authorize and connect</strong>' +
+      '<p>Enter your Client ID, then tap <em>Open TickTick Authorization</em>. TickTick will ask you to log in and approve access, then redirect back here with your token.</p>' +
+    '</div></li>' +
+
+    '</ol>' +
+
+    '<hr class="divider">' +
+    '<label for="clientId">Your TickTick Client ID</label>' +
+    '<input type="text" id="clientId" placeholder="Paste Client ID here…" autocomplete="off" autocorrect="off" spellcheck="false">' +
+    '<button class="btn" id="authorizeBtn" disabled>Open TickTick Authorization</button>';
+
+  /* Copy URI button */
+  document.getElementById('copyUri').onclick = function () {
+    navigator.clipboard.writeText(REDIRECT_URI).then(function () {
+      document.getElementById('copyUri').textContent = 'Copied!';
+      setTimeout(function () {
+        document.getElementById('copyUri').textContent = 'Copy URI';
+      }, 2000);
+    });
+  };
+
+  /* Enable the authorize button only when there's input */
+  var clientIdInput  = document.getElementById('clientId');
+  var authorizeBtn   = document.getElementById('authorizeBtn');
+
+  clientIdInput.oninput = function () {
+    authorizeBtn.disabled = clientIdInput.value.trim() === '';
+  };
+
+  authorizeBtn.onclick = function () {
+    var clientId = clientIdInput.value.trim();
+    if (!clientId) return;
+    var nonce = Math.random().toString(36).slice(2);
+    var url =
+      'https://ticktick.com/oauth/authorize' +
+      '?client_id='     + encodeURIComponent(clientId) +
+      '&redirect_uri='  + encodeURIComponent(REDIRECT_URI) +
+      '&response_type=code' +
+      '&scope='         + encodeURIComponent('tasks:read tasks:write') +
+      '&state='         + nonce;
+    window.location.href = url;
+  };
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 })();
 </script>
 </body>
