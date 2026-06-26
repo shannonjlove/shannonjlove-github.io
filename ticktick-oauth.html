@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TickTick Authorization</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+    .icon { font-size: 48px; margin-bottom: 20px; }
+    h1 { font-size: 1.4em; color: #1a1a1a; margin-bottom: 10px; }
+    p { color: #666; font-size: 0.95em; line-height: 1.6; margin-bottom: 20px; }
+    .code-box {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: monospace;
+      font-size: 0.85em;
+      word-break: break-all;
+      color: #333;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .btn {
+      display: inline-block;
+      background: #4a9eff;
+      color: #fff;
+      text-decoration: none;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #2280e0; }
+    .error { color: #c0392b; }
+    .success-icon { color: #27ae60; }
+  </style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="icon" id="icon">⏳</div>
+  <h1 id="title">Processing…</h1>
+  <p id="message">Please wait while we complete authorization.</p>
+</div>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var code  = params.get('code');
+  var state = params.get('state');
+  var error = params.get('error');
+
+  var icon    = document.getElementById('icon');
+  var title   = document.getElementById('title');
+  var message = document.getElementById('message');
+  var card    = document.getElementById('card');
+
+  if (error) {
+    icon.textContent    = '✗';
+    icon.className      = 'icon error';
+    title.textContent   = 'Authorization Denied';
+    message.textContent = 'TickTick reported an error: ' + error +
+      '. Please return to the app and try again.';
+    return;
+  }
+
+  if (!code) {
+    icon.textContent    = '✗';
+    icon.className      = 'icon error';
+    title.textContent   = 'Missing Authorization Code';
+    message.textContent = 'No authorization code was received from TickTick.';
+    return;
+  }
+
+  // Build the deep-link back into the iOS app.
+  // The URL scheme must match the CFBundleURLSchemes entry in your iOS app's Info.plist.
+  var appScheme   = 'shannonjloveapp';
+  var callbackUrl = appScheme + '://oauth/ticktick?code=' + encodeURIComponent(code) +
+    (state ? '&state=' + encodeURIComponent(state) : '');
+
+  // Attempt to open the app.
+  window.location.href = callbackUrl;
+
+  // Fallback UI shown if the app doesn't open within ~1 second.
+  setTimeout(function () {
+    icon.textContent  = '✓';
+    icon.className    = 'icon success-icon';
+    title.textContent = 'TickTick Connected';
+    message.innerHTML =
+      'Your authorization was successful. ' +
+      'If the app didn\'t open automatically, copy the code below and paste it into the app.';
+
+    var codeBox = document.createElement('div');
+    codeBox.className   = 'code-box';
+    codeBox.textContent = code;
+    card.appendChild(codeBox);
+
+    var btn = document.createElement('button');
+    btn.className   = 'btn';
+    btn.textContent = 'Copy Code';
+    btn.onclick = function () {
+      navigator.clipboard.writeText(code).then(function () {
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = 'Copy Code'; }, 2000);
+      });
+    };
+    card.appendChild(btn);
+  }, 1000);
+})();
+</script>
+</body>
+</html>
