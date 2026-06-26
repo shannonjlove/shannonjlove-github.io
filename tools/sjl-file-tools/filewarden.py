@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -47,17 +48,25 @@ log = logging.getLogger("filewarden")
 
 # ─── SJL rename ──────────────────────────────────────────────────────────────
 
+def _uuid24() -> str:
+    """Generate a 24-character lowercase UUID (hex, no dashes)."""
+    return uuid.uuid4().hex[:24]
+
+
 def sjl_rename(path: Path, category: str, subcategory: str) -> Path:
     """
     SJL naming convention:
-        YYYY-MM-DD--{category}--{subcategory}--{slug}.{ext}
+        YYYY-MM-DD_HH-MM_category-subcategory_description_UUID24.ext
 
-    The original stem is slugified (lowercase, spaces→hyphens, non-alnum stripped).
+    Example:
+        2026-06-26_14-30_resources-automation_invoice_a3f9b2c1d4e5f6a7b8c9d0e1.pdf
     """
-    date_str  = datetime.now().strftime("%Y-%m-%d")
-    stem_slug = re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-")
+    now       = datetime.now()
+    dt_str    = now.strftime("%Y-%m-%d_%H-%M")
+    slug      = re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-")
+    uid       = _uuid24()
     ext       = path.suffix.lstrip(".")
-    new_name  = f"{date_str}--{category}--{subcategory}--{stem_slug}.{ext}"
+    new_name  = f"{dt_str}_{category}-{subcategory}_{slug}_{uid}.{ext}"
     new_path  = path.parent / new_name
     return new_path
 

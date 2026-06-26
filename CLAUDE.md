@@ -163,17 +163,30 @@ python filewarden.py --config config.yaml --dry-run --verbose
 - `stem` — alias for name
 
 **Currently implemented actions:**
-- `sjl_rename` — rename to SJL convention: `YYYY-MM-DD--{category}--{subcategory}--{slug}.{ext}`
+- `sjl_rename` — rename to SJL convention (see below)
 - `mkdir_move` — create `{base}/{subdir_pattern}` and move file there
 - `move` — move to destination directory
 - `log` — write formatted message to log
 - `run_script` — execute shell script with env vars `FW_FILE`, `FW_NAME`, `FW_EXT`
 
-**SJL rename convention:**
+**SJL rename convention (canonical):**
 ```
-YYYY-MM-DD--{category}--{subcategory}--{original-slug}.{ext}
+YYYY-MM-DD_HH-MM_category-subcategory_description_UUID24.ext
 ```
-Example: `invoice.pdf` → `2026-06-26--document--pdf--invoice.pdf`
+- Date+time with underscore separator, time uses hyphens for hours-minutes
+- Category and subcategory joined by hyphen, forming one segment: `resources-automation`
+- Description is hyphenated slug of original filename
+- UUID24: 24-character lowercase hex UUID (`uuid.uuid4().hex[:24]`)
+
+Example: `invoice.pdf` → `2026-06-26_14-30_document-pdf_invoice_a3f9b2c1d4e5f6a7b8c9d0e1.pdf`
+
+**Common category-subcategory combinations:**
+- `projects-[project-name]` — active project files
+- `areas-[area-name]` — ongoing responsibility docs
+- `resources-[topic]` — reference materials
+- `archives-[year]` — completed/retired items
+- `document-pdf`, `document-docx` — typed documents
+- `media-image`, `media-video`, `media-audio` — media assets
 
 **Config structure:**
 ```yaml
@@ -220,15 +233,48 @@ watches:
 - `/data/downloads` — warn log on files >500 MB
 - `/data/tagback/incoming` — sjl_rename + call n8n TagBack ingest webhook
 
+**Hazel 6 extended attribute categories (for future FileWarden work):**
+
+| Category | Attributes |
+|---|---|
+| EXIF / photo metadata | Camera model, lens, aperture, ISO, GPS lat/lon, flash |
+| Video metadata | Resolution, codec, frame rate, duration |
+| Audio metadata | Artist, album, genre, duration, bit rate, sample rate |
+| Custom attributes | Text (regex extraction), Date (pattern), List, Table, JS/AppleScript |
+| Cloud-only files (Hazel 6.1+) | Download before processing / Skip cloud-only / Wait for local copy |
+| Contents / OCR | Text search in PDFs and images via OCR (Hazel 6) |
+
+**Custom attribute JS extraction pattern (Hazel reference):**
+```javascript
+// Extract project code from filename like "PRJ-2026-invoice.pdf"
+const match = theFile.name.match(/PRJ-(\d{4})/);
+return match ? match[1] : null;
+```
+
+**UUID generation for shell scripts:**
+```bash
+uuidgen | tr '[:upper:]' '[:lower:]' | head -c 24
+```
+
+**Pattern tokens in Hazel Rename/Sort actions:**
+- `{date_created:yyyy-MM-dd_HH-mm}` — formatted creation timestamp
+- `{date_modified:yyyy-MM-dd_HH-mm}` — formatted modification timestamp
+- `{uuid}` — unique identifier (Hazel generates; use shell script for UUID24 on Linux)
+- `{counter}` — sequential numbering
+- `{name}`, `{extension}`, `{kind}`, `{width}`, `{height}`
+
 **Hazel features NOT yet in FileWarden (future work):**
 - Date-based conditions (Date Added, Date Modified, Date Created)
 - Kind/type detection beyond extension (MIME type)
-- File contents search
+- File contents search and OCR
+- EXIF, GPS, audio, video metadata attributes
+- Custom attributes (Text/Date/List/Table/JS extraction)
 - Tags and labels (no Finder on Linux, but extended attributes possible)
 - Nested condition groups (AND inside OR)
 - Copy, Archive/Unarchive, Sync actions
 - Notification action
 - Sort into subfolder with Hazel-style token patterns (`%date%`, `%counter%`)
+- Cloud-only file handling (download-before-process / skip / wait)
 - Trash management and App Sweep equivalents
 
 ---
