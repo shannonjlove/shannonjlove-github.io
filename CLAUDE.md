@@ -865,6 +865,125 @@ HookVault exposes these iOS-compatible endpoints:
 
 ---
 
+## Resilio Sync
+
+**Reference:** https://www.resilio.com/sync/
+
+### What Resilio Sync Is
+
+Resilio Sync is a **P2P (BitTorrent-based) file synchronization** tool — "cloud free."
+Files travel directly between devices in parallel chunks, making it 2-10× faster than
+cloud storage for large files. No cloud server holds your data; all sync is device-to-device.
+
+### Key Features
+
+| Feature | Detail |
+|---|---|
+| Protocol | BitTorrent-derived P2P; files split into parallel chunks |
+| Sync modes | Two-way (bidirectional) and one-way (read-only distribution) |
+| Selective sync | Placeholder files let you browse and download on demand |
+| Encrypted folders | AES-128 storage key; untrusted peers sync ciphertext |
+| Permissions | Read-only or read-write per peer; revocable at any time |
+| Bandwidth control | Configurable upload/download rate limits |
+| Large files | No size limit; chunked transfer handles multi-GB files |
+| Speed | Parallel chunk transfer; 2-10× faster than sequential cloud sync |
+| Privacy | Zero cloud intermediary; all data stays on your devices |
+| Pricing | Free (v3.0+) — all features including API, selective sync, encryption |
+
+**Platforms:** Windows, macOS, Linux (including Ubuntu 24.04), iOS, Android, NAS (Synology, QNAP, Western Digital, etc.)
+
+### Running Headless on Linux (Nexus VPS)
+
+```bash
+# Install
+curl -O https://download-cdn.resilio.com/stable/linux-x64/resilio-sync_x64.tar.gz
+tar -xf resilio-sync_x64.tar.gz
+./rslsync --config /etc/resilio/sync.conf
+
+# As systemd service
+systemctl enable resilio-sync
+systemctl start resilio-sync
+```
+
+Default web UI: `http://localhost:8888`  
+Default API: `http://localhost:8888/api/v2/`
+
+**Minimal config file (`sync.conf`):**
+```json
+{
+  "device_name": "Nexus",
+  "listening_port": 0,
+  "storage_path": "/var/lib/resilio",
+  "webui": {
+    "listen": "127.0.0.1:8888",
+    "api_key": "YOUR_API_KEY"
+  }
+}
+```
+
+### REST API v2 (42 endpoints, local only)
+
+**Base:** `http://localhost:8888/api/v2/`  
+**Auth:** API key in query param `?api_key=` or `Authorization` header
+
+**Key endpoints:**
+| Method | Path | Action |
+|---|---|---|
+| `GET` | `/info` | Device name, version, status |
+| `GET` | `/folders` | List all synced folders with status |
+| `POST` | `/folders` | Add a folder to sync (provide path + secret/link) |
+| `DELETE` | `/folders/{id}` | Remove folder from sync |
+| `GET` | `/folders/{id}` | Get folder status, peer count, sync progress |
+| `POST` | `/folders/{id}/link` | Generate share link (params: timelimit, permissions) |
+| `GET` | `/folders/{id}/peers` | List peers syncing this folder |
+| `GET` | `/folders/{id}/files` | List files in folder with sync status |
+| `GET` | `/speed` | Current upload/download throughput |
+| `GET` | `/settings` | Current device settings |
+| `POST` | `/settings` | Update settings (bandwidth limits, etc.) |
+
+**Add a folder example:**
+```bash
+curl -X POST "http://localhost:8888/api/v2/folders?api_key=KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/data/documents", "secret": "AXXXXX..."}'
+```
+
+**Check sync progress:**
+```bash
+curl "http://localhost:8888/api/v2/folders/FOLDER_ID?api_key=KEY"
+# Returns: {"status": "synced"|"syncing"|"error", "peers": 2, "size": ...}
+```
+
+### Sync Modes
+
+**Two-way (default):** Both sides read+write; changes propagate both directions.
+Use for personal files you edit across multiple devices.
+
+**One-way / Read-only:** Source pushes; peers receive only. Use for distributing
+files to NAS backups or untrusted devices.
+
+**Encrypted folder:** Source holds plaintext; encrypted peers store AES-128 ciphertext.
+Source generates two keys: Read-Write key (plaintext) and Encryption key (ciphertext only).
+Share Encryption key with untrusted backup nodes.
+
+### How It Fits SJL Infrastructure
+
+**Potential uses on Nexus:**
+- Sync `/data/` PARA tree to other devices (laptop, NAS, iPhone via iOS app)
+- Sync processed files from FileWarden output directories to other machines
+- Encrypted backup of `/data/hookvault/` (SQLite database) to off-site node
+- Distribute `/data/media/` to NAS without going through any cloud
+- Sync CLAUDE.md and tools repo to other machines as an alternative to git pull
+
+**Resilio vs. cloud storage for SJL use case:**
+- Better for large media files (MP4, MKV) — parallel chunked transfer
+- Better for privacy (no third-party cloud stores data)
+- Better for LAN speed (devices on same network transfer at full local speed)
+- Worse for version history (no commit log; only file system state)
+- Worse for collaboration (no PR/review workflow)
+
+---
+
 ## Claude Code Notes
 
 - Always work on feature branches; never push directly to `main`
