@@ -2,7 +2,8 @@
 
 **Account endpoint:** `p3h2.va.idrivee2-48.com`  
 **Region:** `us-east-1`  
-**Last organized:** 2026-06-27
+**Last organized:** 2026-06-27  
+**Numbering system:** See [para-numbering-system.md](./para-numbering-system.md) — all folders use 5-digit PARA codes mirrored in Raindrop.io, Apple Notes, and TickTick.
 
 ---
 
