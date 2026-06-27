@@ -1,0 +1,13 @@
+[Unit]
+Description=SJL Inbox Sync — Route all cloud storage to iDrive E2 inbox
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/sjl-scripts/inbox-routing/inbox-sync.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sjl-inbox-sync
+EnvironmentFile=-/etc/sjl-inbox-sync.env
