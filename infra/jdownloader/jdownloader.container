@@ -1,0 +1,28 @@
+[Unit]
+Description=JDownloader 2
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/jdownloader-2:latest
+ContainerName=jdownloader-2
+
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Los_Angeles
+EnvironmentFile=/opt/jdownloader/.env
+
+Volume=/opt/jdownloader/config:/config:Z
+Volume=/opt/jdownloader/downloads:/downloads:Z
+
+# JDownloader web UI
+PublishPort=5800:5800
+# MyJDownloader remote
+PublishPort=3129:3129
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

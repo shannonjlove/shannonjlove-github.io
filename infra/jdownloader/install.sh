@@ -1,49 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# JDownloader 2 install script for shannonjlove.cloud WebTop
+# JDownloader 2 Podman Quadlet install script for shannonjlove.cloud WebTop
 # Run as root or with sudo on the VPS
 
-INSTALL_DIR="/opt/jdownloader"
-COMPOSE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+QUADLET_DIR="/etc/containers/systemd"
+DATA_DIR="/opt/jdownloader"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "==> Creating data directories..."
-mkdir -p "$INSTALL_DIR/config" "$INSTALL_DIR/downloads"
-chown -R 1000:1000 "$INSTALL_DIR"
-
-echo "==> Ensuring Docker & Compose plugin are installed..."
-if ! command -v docker &>/dev/null; then
+echo "==> Ensuring Podman is installed..."
+if ! command -v podman &>/dev/null; then
     apt-get update -y
-    apt-get install -y ca-certificates curl gnupg lsb-release
-    install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-        gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-      https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
-      tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update -y
-    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    systemctl enable --now docker
+    apt-get install -y podman
 fi
 
-if [ ! -f "$COMPOSE_DIR/.env" ]; then
+echo "==> Creating data directories..."
+mkdir -p "$DATA_DIR/config" "$DATA_DIR/downloads"
+chown -R 1000:1000 "$DATA_DIR"
+
+if [ ! -f "$DATA_DIR/.env" ]; then
     echo ""
-    echo "  No .env file found. Creating one from .env.example..."
-    cp "$COMPOSE_DIR/.env.example" "$COMPOSE_DIR/.env"
+    echo "  No .env file found at $DATA_DIR/.env"
+    echo "  Copy and edit the example file, then re-run:"
     echo ""
-    echo "  !! Edit $COMPOSE_DIR/.env with your MyJDownloader credentials, then re-run this script."
+    echo "    cp $SCRIPT_DIR/.env.example $DATA_DIR/.env"
+    echo "    nano $DATA_DIR/.env"
     echo ""
     exit 1
 fi
+chmod 600 "$DATA_DIR/.env"
 
-echo "==> Pulling latest JDownloader 2 image..."
-docker compose -f "$COMPOSE_DIR/docker-compose.yml" --env-file "$COMPOSE_DIR/.env" pull
+echo "==> Installing Quadlet unit..."
+install -m 644 "$SCRIPT_DIR/jdownloader.container" "$QUADLET_DIR/jdownloader.container"
 
-echo "==> Starting JDownloader 2..."
-docker compose -f "$COMPOSE_DIR/docker-compose.yml" --env-file "$COMPOSE_DIR/.env" up -d
+echo "==> Reloading systemd and starting service..."
+systemctl daemon-reload
+systemctl enable --now jdownloader.service
 
 echo ""
-echo "Done! JDownloader 2 is running."
-echo "  Web UI : http://$(hostname -I | awk '{print $1}'):5800"
+echo "Done! JDownloader 2 is running via Podman Quadlet."
+echo "  Status  : systemctl status jdownloader.service"
+echo "  Logs    : journalctl -u jdownloader.service -f"
+echo "  Web UI  : http://$(hostname -I | awk '{print $1}'):5800"
 echo "  MyJDownloader will appear in your mobile app within ~30 seconds."
