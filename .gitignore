@@ -1,0 +1,4 @@
+# .gitignore for quadlet
+# Ignore sensitive config files
+configarr/config/secrets.yml
+prowlarr/config/wireguard/wg0.conf

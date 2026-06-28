@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>qBittorrent Session</short>
+  <description>qBittorrent BitTorrent session listening port.</description>
+  <port protocol="tcp" port="63630"/>
+  <port protocol="udp" port="63630"/>
+</service>

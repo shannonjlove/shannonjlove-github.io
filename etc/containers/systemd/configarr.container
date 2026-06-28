@@ -1,0 +1,23 @@
+[Unit]
+Description=Configarr
+After=network-online.target sonarr.service radarr.service #whisparr.service
+
+[Container]
+Image=ghcr.io/raydak-labs/configarr:latest
+ContainerName=configarr
+Environment=TZ=UTC
+Environment=CONFIGARR_ENABLE_MERGE=true
+Volume=/mnt/data/appdata/configarr/config:/app/config
+Volume=/mnt/data/appdata/configarr/repos:/app/repos
+# Volume=/mnt/data/appdata/configarr/cfs:/app/cfs
+# Volume=/mnt/data/appdata/configarr/templates:/app/templates
+Network=media.network
+Secret=configarr_secrets,type=mount,target=/app/config/secrets.yml
+AutoUpdate=registry
+
+[Service]
+Restart=no
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target configarr.timer

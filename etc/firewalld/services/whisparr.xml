@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Whisparr</short>
+  <description>Whisparr adult content collection manager for Usenet and BitTorrent users.</description>
+  <port protocol="tcp" port="6969"/>
+</service>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Prowlarr</short>
+  <description>Prowlarr indexer manager and proxy for Sonarr, Radarr, and other *arr applications.</description>
+  <port protocol="tcp" port="9696"/>
+</service>

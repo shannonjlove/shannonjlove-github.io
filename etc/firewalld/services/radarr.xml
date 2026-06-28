@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Radarr</short>
+  <description>Radarr movie collection manager for Usenet and BitTorrent users.</description>
+  <port protocol="tcp" port="7878"/>
+</service>

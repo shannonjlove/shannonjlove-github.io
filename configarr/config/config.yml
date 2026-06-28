@@ -1,0 +1,126 @@
+# Configarr Configuration
+# https://configarr.de/docs/configuration/config-file/
+
+# localCustomFormatsPath: /app/cfs
+# localConfigTemplatesPath: /app/templates
+
+x-download-clients:
+  qb_base: &qb_base
+    name: qBittorrent
+    type: qbittorrent
+    enable: true
+    priority: 1
+    remove_completed_downloads: true
+    remove_failed_downloads: true
+    fields: &qb_fields
+      host: qbittorrent
+      port: 8080
+      use_ssl: false
+      username: !secret QBITTORRENT_USERNAME
+      password: !secret QBITTORRENT_PASSWORD
+
+sonarr:
+  instance1:
+    base_url: http://sonarr:8989
+    api_key: !secret SONARR_API_KEY
+
+    root_folders:
+      - /data/media/tv
+    
+    quality_definition:
+      type: anime
+    
+    media_naming:
+      season: default
+      series: jellyfin-tvdb
+      episodes:
+        rename: true
+        standard: default
+        daily: default
+        anime: default
+
+    include:
+      # TRaSH-Guides: "WEB-DL (1080p)" quality profile + custom formats
+      - template: 72dae194fc92bf828f32cde7744e51a1
+        source: TRASH
+
+      # TRaSH-Guides: "Remux-1080p - Anime" quality profile
+      - template: 20e0fc959f1f1704bed501f23bdae76f
+        source: TRASH
+
+    delete_unmanaged_custom_formats:
+      enabled: true
+
+    download_clients:
+      data:
+        - <<: *qb_base
+          fields:
+            <<: *qb_fields
+            tv_category: sonarr
+      config:
+        enable_completed_download_handling: true
+        auto_redownload_failed: false
+        auto_redownload_failed_from_interactive_search: false
+
+radarr:
+  instance1:
+    base_url: http://radarr:7878
+    api_key: !secret RADARR_API_KEY
+
+    root_folders:
+      - /data/media/movies
+    
+    quality_definition:
+      type: anime
+
+    media_naming:
+      folder: jellyfin-tmdb
+      movie:
+        rename: true
+        standard: jellyfin-tmdb
+
+    include:
+      # TRaSH-Guides: "HD Bluray + WEB" quality profile
+      - template: d1d67249d3890e49bc12e275d989a7e9
+        source: TRASH
+        
+      # TRaSH-Guides: "[Anime] Remux-1080p" quality profile
+      - template: 722b624f9af1e492284c4bc842153a38
+        source: TRASH
+
+    delete_unmanaged_custom_formats:
+      enabled: true
+
+    download_clients:
+      data:
+        - <<: *qb_base
+          fields:
+            <<: *qb_fields
+            movie_category: radarr
+      config:
+        enable_completed_download_handling: true
+        auto_redownload_failed: false
+        auto_redownload_failed_from_interactive_search: false
+        check_for_finished_download_interval: 1
+
+# whisparr:
+#   instance1:
+#     base_url: http://whisparr:6969
+#     api_key: !secret WHISPARR_API_KEY
+#
+#     root_folders:
+#       - /data/media/xxx
+#
+#     delete_unmanaged_custom_formats:
+#       enabled: true
+#
+#     download_clients:
+#       data:
+#         - <<: *qb_base
+#           fields:
+#             <<: *qb_fields
+#             xxx_category: whisparr
+#       config:
+#         enable_completed_download_handling: true
+#         auto_redownload_failed: false
+#         auto_redownload_failed_from_interactive_search: false

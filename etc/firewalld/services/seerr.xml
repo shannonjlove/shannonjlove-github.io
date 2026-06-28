@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Seerr</short>
+  <description>Jellyseerr/Overseerr media request management and discovery tool.</description>
+  <port protocol="tcp" port="5055"/>
+</service>
