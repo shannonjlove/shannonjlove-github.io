@@ -48,9 +48,10 @@ if [ ! -f "$JAR" ]; then
 fi
 
 # ── 5. Run installer (headless) ───────────────────────────────────────────────
-# The installer self-extracts JDownloader 2 into INSTALL_DIR.
-# -norestart prevents it from launching after install.
-APP_JAR="$INSTALL_DIR/JDownloader2.jar"
+# JDownloader.jar is both installer and launcher on Linux.
+# On first run it self-updates and downloads Core.jar + plugins.
+# JDownloader2.jar is NOT created on Linux — JDownloader.jar is always used.
+APP_JAR="$INSTALL_DIR/Core.jar"
 if [ ! -f "$APP_JAR" ]; then
   echo "==> Running JDownloader installer (headless — this may take 1-2 min)..."
   java -Djava.awt.headless=true \
@@ -58,10 +59,10 @@ if [ ! -f "$APP_JAR" ]; then
        -norestart \
        -noexternalreset \
        2>&1 | tee /tmp/jd-install.log || true
-  # Installer exits non-zero even on success; check for the app jar
+  # Installer exits non-zero even on success; check for Core.jar
   if [ ! -f "$APP_JAR" ]; then
     echo ""
-    echo "ERROR: JDownloader2.jar not found after install."
+    echo "ERROR: Core.jar not found after install."
     echo "       Install log: /tmp/jd-install.log"
     exit 1
   fi
@@ -107,7 +108,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /opt/jdownloader/JDownloader2.jar -norestart
+ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /opt/jdownloader/JDownloader.jar -norestart
 WorkingDirectory=/opt/jdownloader
 Restart=on-failure
 RestartSec=10

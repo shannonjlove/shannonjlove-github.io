@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /opt/jdownloader/JDownloader2.jar -norestart
+ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /opt/jdownloader/JDownloader.jar -norestart
 WorkingDirectory=/opt/jdownloader
 Restart=on-failure
 RestartSec=10
