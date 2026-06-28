@@ -1,0 +1,32 @@
+[Unit]
+Description=qbittorrent container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service
+Requires=arr-suite-network.service
+
+[Container]
+Image=lscr.io/linuxserver/qbittorrent:latest
+ContainerName=qbittorrent
+PublishPort=8080:8080
+PublishPort=6881:6881
+PublishPort=6881:6881/udp
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/qbittorrent:/config:z
+Volume=/mnt/nas/downloads:/downloads:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Environment=WEBUI_PORT=8080
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.yourdomain.com`)
+Label=traefik.http.routers.qbittorrent.tls=true
+Label=traefik.http.routers.qbittorrent.tls.certresolver=letsencrypt
+Label=traefik.http.services.qbittorrent.loadbalancer.server.port=8080
+Label=traefik.http.routers.qbittorrent.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,30 @@
+[Unit]
+Description=radarr container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service qbittorrent.service prowlarr.service
+Requires=arr-suite-network.service qbittorrent.service prowlarr.service
+
+[Container]
+Image=lscr.io/linuxserver/radarr:latest
+ContainerName=radarr
+PublishPort=7878:7878
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/radarr:/config:z
+Volume=/mnt/nas/media:/media:z
+Volume=/mnt/nas/downloads:/downloads:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.radarr.rule=Host(`radarr.yourdomain.com`)
+Label=traefik.http.routers.radarr.tls=true
+Label=traefik.http.routers.radarr.tls.certresolver=letsencrypt
+Label=traefik.http.services.radarr.loadbalancer.server.port=7878
+Label=traefik.http.routers.radarr.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

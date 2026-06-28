@@ -1,0 +1,30 @@
+[Unit]
+Description=sonarr container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service qbittorrent.service prowlarr.service
+Requires=arr-suite-network.service qbittorrent.service prowlarr.service
+
+[Container]
+Image=lscr.io/linuxserver/sonarr:latest
+ContainerName=sonarr
+PublishPort=8989:8989
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/sonarr:/config:z
+Volume=/mnt/nas/media:/media:z
+Volume=/mnt/nas/downloads:/downloads:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.sonarr.rule=Host(`sonarr.yourdomain.com`)
+Label=traefik.http.routers.sonarr.tls=true
+Label=traefik.http.routers.sonarr.tls.certresolver=letsencrypt
+Label=traefik.http.services.sonarr.loadbalancer.server.port=8989
+Label=traefik.http.routers.sonarr.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,30 @@
+[Unit]
+Description=lidarr container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service qbittorrent.service prowlarr.service
+Requires=arr-suite-network.service qbittorrent.service prowlarr.service
+
+[Container]
+Image=lscr.io/linuxserver/lidarr:latest
+ContainerName=lidarr
+PublishPort=8686:8686
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/lidarr:/config:z
+Volume=/mnt/nas/media:/media:z
+Volume=/mnt/nas/downloads:/downloads:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.lidarr.rule=Host(`lidarr.yourdomain.com`)
+Label=traefik.http.routers.lidarr.tls=true
+Label=traefik.http.routers.lidarr.tls.certresolver=letsencrypt
+Label=traefik.http.services.lidarr.loadbalancer.server.port=8686
+Label=traefik.http.routers.lidarr.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

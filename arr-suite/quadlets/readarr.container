@@ -1,0 +1,30 @@
+[Unit]
+Description=readarr container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service qbittorrent.service prowlarr.service
+Requires=arr-suite-network.service qbittorrent.service prowlarr.service
+
+[Container]
+Image=lscr.io/linuxserver/readarr:develop
+ContainerName=readarr
+PublishPort=8787:8787
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/readarr:/config:z
+Volume=/mnt/nas/media:/media:z
+Volume=/mnt/nas/downloads:/downloads:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.readarr.rule=Host(`readarr.yourdomain.com`)
+Label=traefik.http.routers.readarr.tls=true
+Label=traefik.http.routers.readarr.tls.certresolver=letsencrypt
+Label=traefik.http.services.readarr.loadbalancer.server.port=8787
+Label=traefik.http.routers.readarr.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=arr-suite container network
+
+[Network]
+Subnet=10.89.0.0/16
+Label=app=arr-suite
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,28 @@
+[Unit]
+Description=prowlarr container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service
+Requires=arr-suite-network.service
+
+[Container]
+Image=lscr.io/linuxserver/prowlarr:latest
+ContainerName=prowlarr
+PublishPort=9696:9696
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/prowlarr:/config:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.prowlarr.rule=Host(`prowlarr.yourdomain.com`)
+Label=traefik.http.routers.prowlarr.tls=true
+Label=traefik.http.routers.prowlarr.tls.certresolver=letsencrypt
+Label=traefik.http.services.prowlarr.loadbalancer.server.port=9696
+Label=traefik.http.routers.prowlarr.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

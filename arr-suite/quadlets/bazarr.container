@@ -1,0 +1,29 @@
+[Unit]
+Description=bazarr container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service sonarr.service radarr.service
+Requires=arr-suite-network.service sonarr.service radarr.service
+
+[Container]
+Image=lscr.io/linuxserver/bazarr:latest
+ContainerName=bazarr
+PublishPort=6767:6767
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/bazarr:/config:z
+Volume=/mnt/nas/media:/media:z
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.bazarr.rule=Host(`bazarr.yourdomain.com`)
+Label=traefik.http.routers.bazarr.tls=true
+Label=traefik.http.routers.bazarr.tls.certresolver=letsencrypt
+Label=traefik.http.services.bazarr.loadbalancer.server.port=6767
+Label=traefik.http.routers.bazarr.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

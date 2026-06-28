@@ -1,0 +1,28 @@
+[Unit]
+Description=traefik container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service
+Requires=arr-suite-network.service
+
+[Container]
+Image=docker.io/traefik:latest
+ContainerName=traefik
+PublishPort=80:80
+PublishPort=443:443
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/traefik:/config:z
+Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:ro
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+Label=traefik.enable=true
+Label=traefik.http.routers.traefik.rule=Host(`traefik.yourdomain.com`)
+Label=traefik.http.routers.traefik.tls=true
+Label=traefik.http.routers.traefik.tls.certresolver=letsencrypt
+Label=traefik.http.routers.traefik.service=api@internal
+Label=traefik.http.routers.traefik.middlewares=default-headers@file
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
