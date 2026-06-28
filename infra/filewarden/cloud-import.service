@@ -1,0 +1,10 @@
+[Unit]
+Description=Cloud Import — Sync Dropbox/pCloud → rename → iDrive S3
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/filewarden/scripts/sync-cloud-sources.sh
+StandardOutput=journal
+StandardError=journal

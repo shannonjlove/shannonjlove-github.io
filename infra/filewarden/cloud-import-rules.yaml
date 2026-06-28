@@ -1,0 +1,64 @@
+# FileWarden rules — Cloud Import Pipeline
+# Append to /opt/filewarden/config.yaml (or include via config merge)
+#
+# Flow:
+#   rclone sync → /data/staging/{dropbox,pcloud}/
+#   FileWarden sjl_rename → upload to iDrive S3 → archive locally
+#
+# Requires:
+#   /opt/filewarden/scripts/upload-to-idrive-s3.sh
+#   rclone remote named "idrive" configured on the VPS
+
+- name: "Cloud Import — Dropbox"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/staging/dropbox
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .part
+  actions:
+    - type: sjl_rename
+      params:
+        category: import
+        subcategory: dropbox
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" dropbox
+    - type: mkdir_move
+      params:
+        base: /data/archive/dropbox
+        subdir_pattern: "{year}/{month}"
+  stop_processing: true
+
+- name: "Cloud Import — pCloud"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/staging/pcloud
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .part
+  actions:
+    - type: sjl_rename
+      params:
+        category: import
+        subcategory: pcloud
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" pcloud
+    - type: mkdir_move
+      params:
+        base: /data/archive/pcloud
+        subdir_pattern: "{year}/{month}"
+  stop_processing: true

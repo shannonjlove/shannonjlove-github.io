@@ -1,0 +1,21 @@
+# rclone remotes required for cloud-import pipeline.
+# Add to /root/.config/rclone/rclone.conf on the VPS.
+# Run `rclone config` interactively to generate OAuth tokens for Dropbox/pCloud.
+
+[dropbox]
+type = dropbox
+# Run: rclone config → New → dropbox → follow OAuth flow
+
+[pcloud]
+type = pcloud
+# Run: rclone config → New → pcloud → follow OAuth flow
+
+[idrive]
+type = s3
+provider = IDrive
+env_auth = false
+access_key_id = YOUR_IDRIVE_ACCESS_KEY
+secret_access_key = YOUR_IDRIVE_SECRET_KEY
+endpoint = h41.fra.idrivee2-1.com
+# Find your endpoint in iDrive e2 dashboard → Buckets → endpoint URL
+# Buckets to create: sjl-media, sjl-docs, sjl-archive
