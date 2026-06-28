@@ -238,6 +238,56 @@ yaml_tag_extract_enabled: true
 # Write parsed tags to extended attributes
 yaml_tag_write_xattrs: true
 
+# ─── Skill: Extended Attribute Tagging ────────────────────────────────────────
+# Source: eclecticlight.co xattred/xattr research (Howard Oakley)
+#
+# xattr key reference:
+#   com.apple.metadata:_kMDItemUserTags   — Finder tags (binary plist array)
+#     Tag string format: "Name" (plain) or "Name\nN" (N = Finder color 0-7)
+#     Colors: 0=None 1=Gray 2=Green 3=Purple 4=Blue 5=Red 6=Orange 7=Yellow
+#   com.apple.metadata:kMDItemKeywords    — Spotlight "Keywords"
+#   com.apple.metadata:kMDItemComment     — Spotlight "Comment"
+#   co.sjl.filewarden:<field>#S           — SJL governance (#S = iCloud syncable)
+#
+# XATTR preservation flags (appended after # in key name):
+#   S = SYNCABLE (iCloud), C = CONTENT_DEPENDENT, P = NO_EXPORT, N = NEVER_PRESERVE
+#
+# APFS inline limit: 3,804 bytes; overflow stored in separate data stream.
+
+xattr_tag_enabled: true
+
+# Strip com.apple.quarantine when FileWarden takes governance custody
+xattr_strip_quarantine_on_govern: false
+
+# Write DOCID as a Finder tag (plain, no color)
+xattr_tag_docid: true
+
+# Write PARA color label as Finder tag (color maps to PARA zone)
+xattr_write_color_tag: true
+
+# Write Spotlight Comment with governance summary
+xattr_write_spotlight_comment: true
+
+# Enumerate all xattrs into tx.metadata at analyze start (diagnostic, slow)
+xattr_inventory_enabled: false
+
+# Override PARA label names in Finder tags (defaults to PARA code)
+para_tag_labels:
+  "01000": INBOX
+  "02000": PROJECTS
+  "03000": AREAS
+  "04000": RESOURCES
+  "05000": ARCHIVES
+  "06000": PRIVATE-MEDIA
+  "07000": SYSTEM-AUTOMATION
+  "08000": APP-DATA
+  "09000": QUARANTINE
+
+# Extra static tags to add to every governed file
+xattr_extra_tags: []
+#  - sjl-governed
+#  - nexus
+
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
 log_level: INFO

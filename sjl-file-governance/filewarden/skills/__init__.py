@@ -26,6 +26,7 @@ from filewarden.skills import (
     skill_mp4_gather,
     skill_audio_convert,
     skill_tag_from_yaml,
+    skill_xattr_tag,
 )
 
 __all__ = [
@@ -48,4 +49,5 @@ __all__ = [
     "skill_mp4_gather",
     "skill_audio_convert",
     "skill_tag_from_yaml",
+    "skill_xattr_tag",
 ]
