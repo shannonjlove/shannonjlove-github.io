@@ -1,0 +1,27 @@
+{
+  "env": {
+    "BOOKSTACK_URL": "https://bookstack.shannonjlove.cloud",
+    "BOOKSTACK_TOKEN_ID": "YOUR_BOOKSTACK_TOKEN_ID",
+    "BOOKSTACK_TOKEN_SECRET": "YOUR_BOOKSTACK_TOKEN_SECRET",
+    "RAINDROP_TOKEN": "YOUR_RAINDROP_BEARER_TOKEN",
+    "RAINDROP_CLIENT_ID": "YOUR_RAINDROP_CLIENT_ID",
+    "RAINDROP_CLIENT_SECRET": "YOUR_RAINDROP_CLIENT_SECRET",
+    "RAINDROP_WRITE_TOKEN": "YOUR_RAINDROP_WRITE_TOKEN",
+    "SJL_VPS_IP": "72.61.74.250",
+    "SJL_DOMAIN": "shannonjlove.cloud"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/bookstack-inject.sh",
+            "timeout": 15,
+            "statusMessage": "Loading BookStack knowledge base..."
+          }
+        ]
+      }
+    ]
+  }
+}
