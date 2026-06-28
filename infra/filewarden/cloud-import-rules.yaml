@@ -1,21 +1,31 @@
 # FileWarden rules — Cloud Import Pipeline
 # Append to /opt/filewarden/config.yaml (or include via config merge)
 #
-# Flow:
-#   rclone sync → /data/staging/{dropbox,pcloud}/
-#   FileWarden sjl_rename → upload to iDrive S3 → archive locally
+# Architecture:
+#   Dropbox/pCloud → rclone sync → /data/inbox/
+#   FileWarden inbox rules → sjl_rename + PARA routing (existing rules handle this)
+#   Files land in /data/{projects,areas,resources,archive}/
+#   Post-PARA rules below → upload to iDrive S3
+#
+# These rules do NOT rename or route — that is the inbox rules' job.
+# They only fire AFTER files have left the inbox and reached a PARA destination.
 #
 # Requires:
 #   /opt/filewarden/scripts/upload-to-idrive-s3.sh
 #   rclone remote named "idrive" configured on the VPS
 
-- name: "Cloud Import — Dropbox"
+# ── Stage 1: Inbox ingestion ──────────────────────────────────────────────────
+# Files from cloud sources land in /data/inbox/dropbox/ and /data/inbox/pcloud/.
+# The existing inbox rules (sjl_rename + PARA routing) fire first and move them
+# to their proper PARA destination. stop_processing: false lets inbox rules run.
+
+- name: "Cloud Ingest — tag Dropbox origin"
   enabled: true
   match: all
   conditions:
     - attribute: path
       operator: starts_with
-      value: /data/staging/dropbox
+      value: /data/inbox/dropbox
     - attribute: full_name
       operator: does_not_contain
       value: .tmp
@@ -23,42 +33,106 @@
       operator: does_not_contain
       value: .part
   actions:
-    - type: sjl_rename
+    - type: log
       params:
-        category: import
-        subcategory: dropbox
+        message: "Cloud ingest [dropbox]: {full_name}"
+  stop_processing: false   # allow existing inbox rules to continue
+
+- name: "Cloud Ingest — tag pCloud origin"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/inbox/pcloud
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .part
+  actions:
+    - type: log
+      params:
+        message: "Cloud ingest [pcloud]: {full_name}"
+  stop_processing: false   # allow existing inbox rules to continue
+
+# ── Stage 2: Post-PARA upload to iDrive S3 ───────────────────────────────────
+# After the inbox rules have routed and renamed files into PARA directories,
+# these rules upload them to iDrive S3 and keep the local copy in place.
+
+- name: "iDrive S3 Upload — /data/resources"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/resources
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+  actions:
     - type: run_script
       params:
-        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" dropbox
-    - type: mkdir_move
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" resources
+    - type: log
       params:
-        base: /data/archive/dropbox
-        subdir_pattern: "{year}/{month}"
+        message: "Uploaded to iDrive S3 [resources]: {full_name}"
   stop_processing: true
 
-- name: "Cloud Import — pCloud"
+- name: "iDrive S3 Upload — /data/archive"
   enabled: true
   match: all
   conditions:
     - attribute: path
       operator: starts_with
-      value: /data/staging/pcloud
+      value: /data/archive
     - attribute: full_name
       operator: does_not_contain
       value: .tmp
-    - attribute: full_name
-      operator: does_not_contain
-      value: .part
   actions:
-    - type: sjl_rename
-      params:
-        category: import
-        subcategory: pcloud
     - type: run_script
       params:
-        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" pcloud
-    - type: mkdir_move
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" archive
+    - type: log
       params:
-        base: /data/archive/pcloud
-        subdir_pattern: "{year}/{month}"
+        message: "Uploaded to iDrive S3 [archive]: {full_name}"
+  stop_processing: true
+
+- name: "iDrive S3 Upload — /data/projects"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/projects
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+  actions:
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" projects
+    - type: log
+      params:
+        message: "Uploaded to iDrive S3 [projects]: {full_name}"
+  stop_processing: true
+
+- name: "iDrive S3 Upload — /data/areas"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/areas
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+  actions:
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" areas
+    - type: log
+      params:
+        message: "Uploaded to iDrive S3 [areas]: {full_name}"
   stop_processing: true
