@@ -20,70 +20,51 @@ qBittorrent → Prowlarr → [Sonarr/Radarr/Lidarr/Readarr] → [Bazarr] → ffm
 5. **ffmpeg faststart** pre-processes MP4 files so the MOOV atom is at the front (critical for streaming — see below)
 6. **Jellyfin** serves the library with on-the-fly HLS transcoding for client compatibility
 
-### Video Streaming: Critical Knowledge (Synthesized)
+### Video Streaming: Apple Platform Strategy (Synthesized)
 
-#### The MOOV Atom Problem
+#### The MOOV Atom (Server-Side Prerequisite)
 
-MP4 files have a metadata section called the **MOOV atom**. By default most encoders place it at the **end** of the file. When a player tries to stream this, it must download the entire file before playback can begin.
-
-For streaming, the MOOV atom must be at the **front**. Fix with ffmpeg:
+MP4 files have a metadata section called the **MOOV atom**. By default most encoders place it at the **end** of the file — players must download the entire file before playback can begin. Move it to the front with ffmpeg (no re-encode):
 
 ```bash
-ffmpeg -i input.mp4 -movflags faststart -acodec copy -vcodec copy output.mp4
+ffmpeg -i input.mp4 -movflags faststart -c copy output.mp4
 ```
 
-Run this on all MP4 files after they land in the media library. Can be automated via a Sonarr/Radarr post-processing script or an n8n workflow.
+Automate via a Sonarr/Radarr post-processing script so every downloaded MP4 is fixed automatically before Jellyfin serves it.
 
-#### AVPlayer / iOS Streaming (Critical Limitation)
+#### HLS: The Universal Apple Protocol
 
-**AVPlayer does NOT support HTTP range requests (HTTP 206 Partial Content).** It always downloads the full file before playing, regardless of server support or MOOV atom placement.
-
-For iOS apps using AVPlayer, you **must use HLS** (.m3u8 manifest + .ts segments):
-
-```swift
-let asset = AVURLAsset(url: URL(string: "https://your.domain.com/videos/video.m3u8")!)
-let item = AVPlayerItem(asset: asset)
-let player = AVPlayer(playerItem: item)
-```
-
-#### Generating HLS with ffmpeg
+HLS (HTTP Live Streaming, `.m3u8` + `.ts` segments) is Apple's native streaming protocol — hardware-accelerated on all Apple silicon. Use it for all Apple platform clients.
 
 ```bash
-ffmpeg -i input.mp4 \
-  -codec: copy \
-  -start_number 0 \
-  -hls_time 10 \
-  -hls_list_size 0 \
-  -f hls \
-  output.m3u8
+# Generate HLS from MP4 (copy streams, no re-encode)
+ffmpeg -i input.mp4 -codec: copy -hls_time 6 -hls_list_size 0 -f hls output.m3u8
 ```
 
-This produces `output.m3u8` + `output0.ts`, `output1.ts`, ... — upload all to S3 or serve from Jellyfin.
+Jellyfin transcodes to HLS on-the-fly for any client that needs it — no manual pre-conversion required when using Jellyfin clients.
 
-#### Jellyfin + HLS
+#### Apple Platform Clients
 
-Jellyfin natively transcodes to HLS on-the-fly for clients that need it. For direct-play (no transcoding), MP4 files with MOOV atom at the front (`faststart`) will start immediately in web browsers and most non-iOS clients.
+**iOS:** Use `AVPlayerViewController` (AVKit) — not raw `AVPlayer` — for the full native playback UI with PiP and AirPlay controls built in. Best consumer app: **Infuse** (direct plays virtually all codecs, no transcoding).
 
-For iOS clients connecting to Jellyfin, Jellyfin's native HLS transcoding handles this automatically — no manual pre-conversion needed.
+**tvOS:** Same `AVPlayerViewController` API. Apple TV 4K supports Dolby Vision, HDR10, and Dolby Atmos passthrough — enable in Jellyfin Dashboard → Playback. Best consumer app: **Infuse tvOS**.
 
-#### AWS MediaConvert (for production iOS apps)
+**macOS:** Use `VideoPlayer` (SwiftUI) or `AVPlayerView` (AppKit). Best native app: **IINA** (hardware-accelerated, AirPlay, system media controls). Best Jellyfin client: **Infuse macOS** or **Jellyfin Media Player**.
 
-For dedicated iOS app development serving video from S3:
-1. Use **AWS Elemental MediaConvert** to convert MP4 → HLS
-2. Output: `.m3u8` manifest + `.ts` segments → upload to S3
-3. Point AVPlayer at the `.m3u8` URL
-4. Optionally add **CloudFront** in front of S3 for caching and reduced egress cost
-
-CloudFront is not required for basic HLS playback from S3, but adds value at scale.
+**AirPlay 2:** Built into `AVPlayerViewController` automatically — route picker appears in transport controls. All Jellyfin HLS streams are AirPlay-compatible.
 
 #### Decision Matrix
 
-| Client | Protocol | Solution |
-|---|---|---|
-| Browser | HTTP range requests | MP4 with faststart |
-| iOS AVPlayer | HLS only | `.m3u8` via ffmpeg or MediaConvert |
-| Jellyfin web client | HTTP range + HLS fallback | faststart MP4 (Jellyfin transcodes if needed) |
-| Jellyfin iOS app | HLS (Jellyfin handles) | Let Jellyfin transcode |
+| Use Case | Recommended Approach |
+|---|---|
+| iOS custom app | `AVPlayerViewController` + Jellyfin HLS or direct-play URL |
+| tvOS custom app | `AVPlayerViewController` + Dolby passthrough via Jellyfin |
+| macOS custom app | `VideoPlayer` (SwiftUI) or `AVPlayerView` (AppKit) |
+| iOS consumer | Infuse → Jellyfin |
+| Apple TV consumer | Infuse tvOS → Jellyfin |
+| Mac consumer | IINA or Infuse macOS → Jellyfin |
+| Browser | Jellyfin Web — faststart MP4 direct plays instantly |
+| Casting | AirPlay 2 (automatic in AVKit) |
 
 ### Infrastructure Quick Reference
 
@@ -131,4 +112,4 @@ cd ~/arr-suite
 ### Skills / Commands Available
 
 - `/podman-quadlets-media-suite` — full quadlet config patterns, NPM setup, Fedora setup steps, firewall rules
-- `/video-streaming-hls-avplayer` — HLS, AVPlayer limitations, ffmpeg commands, MOOV atom, S3/CloudFront
+- `/video-streaming-apple-platforms` — HLS, AVKit (iOS/tvOS/macOS), Infuse/IINA client guide, ffmpeg faststart/HLS, AirPlay, S3/CloudFront, Sonarr post-processing hook
