@@ -15,12 +15,6 @@ Environment=PUID=1000
 Environment=PGID=1000
 Environment=TZ=America/Chicago
 Label=io.containers.autoupdate=registry
-Label=traefik.enable=true
-Label=traefik.http.routers.bazarr.rule=Host(`bazarr.yourdomain.com`)
-Label=traefik.http.routers.bazarr.tls=true
-Label=traefik.http.routers.bazarr.tls.certresolver=letsencrypt
-Label=traefik.http.services.bazarr.loadbalancer.server.port=6767
-Label=traefik.http.routers.bazarr.middlewares=default-headers@file
 
 [Service]
 Restart=always

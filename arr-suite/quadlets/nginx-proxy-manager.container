@@ -1,0 +1,23 @@
+[Unit]
+Description=nginx-proxy-manager container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service
+Requires=arr-suite-network.service
+
+[Container]
+Image=docker.io/jc21/nginx-proxy-manager:latest
+ContainerName=nginx-proxy-manager
+PublishPort=80:80
+PublishPort=443:443
+PublishPort=81:81
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/npm/data:/data:z
+Volume=/home/user/arr-suite/config/npm/letsencrypt:/etc/letsencrypt:z
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

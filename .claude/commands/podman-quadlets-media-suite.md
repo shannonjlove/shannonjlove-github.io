@@ -8,7 +8,7 @@ Complete self-hosted media automation suite using the Arr stack, Podman Quadlets
 Prowlarr (indexers) → Sonarr/Radarr/Lidarr/Readarr (managers) → qBittorrent (downloader) → Bazarr (subtitles) → Jellyfin (streaming)
 ```
 
-All services run in a single Podman network (`arr-suite`) on subnet `10.89.0.0/16`, behind Traefik reverse proxy with automatic Let's Encrypt SSL.
+All services run in a single Podman network (`arr-suite`) on subnet `10.89.0.0/16`, behind Nginx Proxy Manager for reverse proxying with Let's Encrypt SSL (configured via web UI).
 
 ## Service Ports
 
@@ -25,7 +25,7 @@ All services run in a single Podman network (`arr-suite`) on subnet `10.89.0.0/1
 | Audiobookshelf | 13378 | Audiobook/podcast server |
 | ConvertX | 3000 | File format converter (1000+ formats) |
 | ThinkDashboard | 8082 | Bookmark dashboard |
-| Traefik | 80/443 | Reverse proxy + SSL |
+| Nginx Proxy Manager | 80/443/81 | Reverse proxy + SSL + admin UI |
 | n8n | 5678 | Workflow automation |
 | PostgreSQL | 5432 | Database for n8n |
 | Jaeger | 16686 | Distributed tracing |
@@ -34,9 +34,10 @@ All services run in a single Podman network (`arr-suite`) on subnet `10.89.0.0/1
 ## Storage Layout
 
 ```
-/home/user/arr-suite/config/    # Persistent service configs
-/mnt/nas/media/                  # Organized media library
-/mnt/nas/downloads/              # Download staging area
+/home/user/arr-suite/config/         # Persistent service configs
+/home/user/arr-suite/config/npm/     # NPM data and SSL certs
+/mnt/nas/media/                       # Organized media library
+/mnt/nas/downloads/                   # Download staging area
 ```
 
 ## Quadlet Configuration Pattern
@@ -62,12 +63,6 @@ Environment=PUID=1000
 Environment=PGID=1000
 Environment=TZ=America/Chicago
 Label=io.containers.autoupdate=registry
-Label=traefik.enable=true
-Label=traefik.http.routers.<service>.rule=Host(`<service>.yourdomain.com`)
-Label=traefik.http.routers.<service>.tls=true
-Label=traefik.http.routers.<service>.tls.certresolver=letsencrypt
-Label=traefik.http.services.<service>.loadbalancer.server.port=<port>
-Label=traefik.http.routers.<service>.middlewares=default-headers@file
 
 [Service]
 Restart=always
@@ -75,6 +70,49 @@ Restart=always
 [Install]
 WantedBy=default.target
 ```
+
+## Nginx Proxy Manager Quadlet
+
+```ini
+[Unit]
+Description=nginx-proxy-manager container
+Wants=network-online.target
+After=network-online.target arr-suite-network.service
+Requires=arr-suite-network.service
+
+[Container]
+Image=docker.io/jc21/nginx-proxy-manager:latest
+ContainerName=nginx-proxy-manager
+PublishPort=80:80
+PublishPort=443:443
+PublishPort=81:81
+Network=arr-suite.network
+Volume=/home/user/arr-suite/config/npm/data:/data:z
+Volume=/home/user/arr-suite/config/npm/letsencrypt:/etc/letsencrypt:z
+Environment=TZ=America/Chicago
+Label=io.containers.autoupdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
+```
+
+## Nginx Proxy Manager Setup
+
+NPM uses a web UI instead of container labels or config files.
+
+1. Start NPM, then browse to `http://<host-ip>:81`
+2. Default credentials: `admin@example.com` / `changeme` (change immediately)
+3. Add proxy hosts via **Hosts → Proxy Hosts → Add Proxy Host**:
+   - **Domain**: `sonarr.yourdomain.com`
+   - **Scheme**: `http`
+   - **Forward Hostname**: `sonarr` (container name on `arr-suite` network)
+   - **Forward Port**: `8989`
+   - **SSL tab**: Request Let's Encrypt cert, enable Force SSL + HSTS
+
+Repeat for each service. Use container names as forward hostnames since all services share the `arr-suite` network.
 
 ## Network Quadlet
 
@@ -89,18 +127,18 @@ Label=app=arr-suite
 
 - **Rootless containers**: All services run without root (`PUID`/`PGID` as regular user)
 - **SELinux**: Volume mounts use `:z` flag for automatic label relabeling
-- **Network isolation**: Services communicate on internal network; only Traefik exposes external ports
-- **Automatic SSL**: Let's Encrypt via Traefik `letsencrypt` cert resolver
+- **Network isolation**: Services communicate on internal network; only NPM exposes external ports 80/443
+- **Automatic SSL**: Let's Encrypt certs managed through NPM web UI
 - **Auto-updates**: `io.containers.autoupdate=registry` label enables `podman auto-update`
 
 ## Startup Dependency Order
 
 1. `arr-suite-network.service` (Podman network)
-2. `qbittorrent.service` + `prowlarr.service` (download client + indexers)
-3. `sonarr.service` + `radarr.service` + `lidarr.service` + `readarr.service` (media managers)
-4. `bazarr.service` (subtitles, needs Sonarr/Radarr)
-5. `jellyfin.service` (media server, needs organized library)
-6. `traefik.service` (can start early, routes to ready services)
+2. `nginx-proxy-manager.service` (can start early)
+3. `qbittorrent.service` + `prowlarr.service` (download client + indexers)
+4. `sonarr.service` + `radarr.service` + `lidarr.service` + `readarr.service` (media managers)
+5. `bazarr.service` (subtitles, needs Sonarr/Radarr)
+6. `jellyfin.service` (media server)
 
 ## Management Script (setup-quadlets.sh)
 
@@ -129,7 +167,7 @@ loginctl enable-linger $USER
 
 # 2. Create directory structure
 mkdir -p ~/arr-suite/{config,quadlets}
-mkdir -p ~/arr-suite/config/{sonarr,radarr,lidarr,readarr,prowlarr,qbittorrent,bazarr,jellyfin,traefik,n8n,audiobookshelf}
+mkdir -p ~/arr-suite/config/{sonarr,radarr,lidarr,readarr,prowlarr,qbittorrent,bazarr,jellyfin,npm/data,npm/letsencrypt,n8n,audiobookshelf}
 
 # 3. Copy quadlet files to systemd user path
 mkdir -p ~/.config/containers/systemd/
@@ -139,75 +177,24 @@ cp ~/arr-suite/quadlets/*.network ~/.config/containers/systemd/
 # 4. Reload systemd and start
 systemctl --user daemon-reload
 systemctl --user start arr-suite-network
+systemctl --user start nginx-proxy-manager
 systemctl --user start prowlarr qbittorrent
 systemctl --user start sonarr radarr lidarr readarr
-systemctl --user start bazarr jellyfin traefik
+systemctl --user start bazarr jellyfin
 
 # 5. Enable auto-update
 systemctl --user enable --now podman-auto-update.timer
-```
 
-## Traefik Static Config (traefik.yml)
-
-```yaml
-api:
-  dashboard: true
-  insecure: false
-
-entryPoints:
-  web:
-    address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-  websecure:
-    address: ":443"
-
-providers:
-  docker:
-    endpoint: "unix:///run/user/1000/podman/podman.sock"
-    exposedByDefault: false
-    network: arr-suite
-  file:
-    directory: /config/dynamic
-    watch: true
-
-certificatesResolvers:
-  letsencrypt:
-    acme:
-      email: your@email.com
-      storage: /config/acme.json
-      httpChallenge:
-        entryPoint: web
-
-log:
-  level: INFO
-```
-
-## Traefik Dynamic Config (dynamic/middlewares.yml)
-
-```yaml
-http:
-  middlewares:
-    default-headers:
-      headers:
-        frameDeny: true
-        browserXssFilter: true
-        contentTypeNosniff: true
-        forceSTSHeader: true
-        stsSeconds: 63072000
-        stsIncludeSubdomains: true
-        stsPreload: true
+# 6. Configure proxy hosts in NPM UI at http://<host>:81
 ```
 
 ## Firewall Rules (firewalld)
 
 ```bash
-# Open Traefik ports
+# NPM ports
 sudo firewall-cmd --permanent --add-port=80/tcp
 sudo firewall-cmd --permanent --add-port=443/tcp
+sudo firewall-cmd --permanent --add-port=81/tcp
 # RustDesk
 sudo firewall-cmd --permanent --add-port=21115-21119/tcp
 sudo firewall-cmd --permanent --add-port=21116/udp
@@ -219,3 +206,4 @@ sudo firewall-cmd --reload
 - Source article: "Building a Complete Self-Hosted Media Automation Suite with Podman Quadlets" by Miklós Galicz (Medium, Oct 2025)
 - Template repo: https://codeberg.org/blackfyre/arr-suite
 - Podman Quadlets docs: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html
+- NPM docs: https://nginxproxymanager.com/guide/

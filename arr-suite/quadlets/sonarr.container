@@ -16,12 +16,6 @@ Environment=PUID=1000
 Environment=PGID=1000
 Environment=TZ=America/Chicago
 Label=io.containers.autoupdate=registry
-Label=traefik.enable=true
-Label=traefik.http.routers.sonarr.rule=Host(`sonarr.yourdomain.com`)
-Label=traefik.http.routers.sonarr.tls=true
-Label=traefik.http.routers.sonarr.tls.certresolver=letsencrypt
-Label=traefik.http.services.sonarr.loadbalancer.server.port=8989
-Label=traefik.http.routers.sonarr.middlewares=default-headers@file
 
 [Service]
 Restart=always

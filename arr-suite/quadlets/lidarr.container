@@ -16,12 +16,6 @@ Environment=PUID=1000
 Environment=PGID=1000
 Environment=TZ=America/Chicago
 Label=io.containers.autoupdate=registry
-Label=traefik.enable=true
-Label=traefik.http.routers.lidarr.rule=Host(`lidarr.yourdomain.com`)
-Label=traefik.http.routers.lidarr.tls=true
-Label=traefik.http.routers.lidarr.tls.certresolver=letsencrypt
-Label=traefik.http.services.lidarr.loadbalancer.server.port=8686
-Label=traefik.http.routers.lidarr.middlewares=default-headers@file
 
 [Service]
 Restart=always
