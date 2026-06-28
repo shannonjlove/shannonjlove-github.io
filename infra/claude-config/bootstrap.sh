@@ -37,6 +37,7 @@ echo "    Installed: $CLAUDE_DIR/CLAUDE.md"
 echo "==> Installing scripts..."
 cp "$REPO_DIR/scripts/bookstack-inject.sh" "$SCRIPTS_DIR/bookstack-inject.sh"
 cp "$REPO_DIR/scripts/raindrop-add-infra.sh" "$SCRIPTS_DIR/raindrop-add-infra.sh"
+cp "$REPO_DIR/scripts/webtop-claude-postinstall.sh" "$SCRIPTS_DIR/webtop-claude-postinstall.sh"
 chmod +x "$SCRIPTS_DIR/"*.sh
 echo "    Installed: $SCRIPTS_DIR/"
 

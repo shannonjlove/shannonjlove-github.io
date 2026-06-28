@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# NOTE: Container registries (docker.io, lscr.io, ghcr.io) return 403 from
+# this VPS. Use install-native.sh instead for a working native Java install.
+# This file is kept for reference only.
 set -euo pipefail
 
 # JDownloader 2 Podman Quadlet install script for shannonjlove.cloud WebTop

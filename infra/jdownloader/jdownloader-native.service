@@ -1,0 +1,14 @@
+[Unit]
+Description=JDownloader 2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /opt/jdownloader/JDownloader2.jar -norestart
+WorkingDirectory=/opt/jdownloader
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
