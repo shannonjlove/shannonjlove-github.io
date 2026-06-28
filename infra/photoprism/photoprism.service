@@ -1,0 +1,22 @@
+[Unit]
+Description=PhotoPrism — AI-Powered Photo/Video Library
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=photoprism
+Group=photoprism
+WorkingDirectory=/opt/photoprism
+EnvironmentFile=/etc/photoprism/options.env
+ExecStart=/opt/photoprism/photoprism start
+ExecStop=/opt/photoprism/photoprism stop
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

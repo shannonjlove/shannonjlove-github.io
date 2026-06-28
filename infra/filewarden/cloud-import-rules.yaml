@@ -2,22 +2,24 @@
 # Append to /opt/filewarden/config.yaml (or include via config merge)
 #
 # Architecture:
-#   Dropbox/pCloud → rclone sync → /data/inbox/
-#   FileWarden inbox rules → sjl_rename + PARA routing (existing rules handle this)
-#   Files land in /data/{projects,areas,resources,archive}/
-#   Post-PARA rules below → upload to iDrive S3
+#   Dropbox/pCloud → rclone sync → /data/inbox/{dropbox,pcloud}/
+#   Stage 1: Log cloud origin  (stop_processing: false — inbox rules continue)
+#   Stage 2: Existing inbox rules → sjl_rename + PARA routing → /data/{projects,areas,resources,archive}/
+#   Stage 3: tag-and-analyze.sh — exhaustive metadata + write-back (fires on PARA dirs)
+#   Stage 4: upload-to-idrive-s3.sh — upload file + all sidecars to iDrive E2
 #
-# These rules do NOT rename or route — that is the inbox rules' job.
-# They only fire AFTER files have left the inbox and reached a PARA destination.
+# Tagging produces per-file sidecars (.meta.json .ffprobe.json .acoustid.json .ocr.txt)
+# that travel with the file to S3 and persist for downstream software.
 #
 # Requires:
+#   /opt/filewarden/scripts/tag-and-analyze.sh
 #   /opt/filewarden/scripts/upload-to-idrive-s3.sh
-#   rclone remote named "idrive" configured on the VPS
+#   rclone remote "idrive" configured on VPS
+#   bash /opt/filewarden/scripts/install-tagging-deps.sh  (run once)
 
 # ── Stage 1: Inbox ingestion ──────────────────────────────────────────────────
-# Files from cloud sources land in /data/inbox/dropbox/ and /data/inbox/pcloud/.
-# The existing inbox rules (sjl_rename + PARA routing) fire first and move them
-# to their proper PARA destination. stop_processing: false lets inbox rules run.
+# Log cloud origin; stop_processing: false so existing inbox rules (sjl_rename +
+# PARA routing) continue to fire afterward.
 
 - name: "Cloud Ingest — tag Dropbox origin"
   enabled: true
@@ -36,7 +38,7 @@
     - type: log
       params:
         message: "Cloud ingest [dropbox]: {full_name}"
-  stop_processing: false   # allow existing inbox rules to continue
+  stop_processing: false
 
 - name: "Cloud Ingest — tag pCloud origin"
   enabled: true
@@ -55,13 +57,14 @@
     - type: log
       params:
         message: "Cloud ingest [pcloud]: {full_name}"
-  stop_processing: false   # allow existing inbox rules to continue
+  stop_processing: false
 
-# ── Stage 2: Post-PARA upload to iDrive S3 ───────────────────────────────────
-# After the inbox rules have routed and renamed files into PARA directories,
-# these rules upload them to iDrive S3 and keep the local copy in place.
+# ── Stage 3 + 4: Tag → Upload (fires on every PARA destination) ──────────────
+# Runs AFTER inbox rules have routed and renamed the file.
+# tag-and-analyze.sh runs first (produces sidecars + writes tags back to file),
+# then upload-to-idrive-s3.sh uploads file + all sidecars to the correct bucket.
 
-- name: "iDrive S3 Upload — /data/resources"
+- name: "Tag + Upload — /data/resources"
   enabled: true
   match: all
   conditions:
@@ -71,54 +74,31 @@
     - attribute: full_name
       operator: does_not_contain
       value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .meta.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ffprobe.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .acoustid.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ocr.txt
   actions:
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/tag-and-analyze.sh "$FW_FILE"
     - type: run_script
       params:
         script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" resources
     - type: log
       params:
-        message: "Uploaded to iDrive S3 [resources]: {full_name}"
+        message: "Tagged + uploaded [resources]: {full_name}"
   stop_processing: true
 
-- name: "iDrive S3 Upload — /data/archive"
-  enabled: true
-  match: all
-  conditions:
-    - attribute: path
-      operator: starts_with
-      value: /data/archive
-    - attribute: full_name
-      operator: does_not_contain
-      value: .tmp
-  actions:
-    - type: run_script
-      params:
-        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" archive
-    - type: log
-      params:
-        message: "Uploaded to iDrive S3 [archive]: {full_name}"
-  stop_processing: true
-
-- name: "iDrive S3 Upload — /data/projects"
-  enabled: true
-  match: all
-  conditions:
-    - attribute: path
-      operator: starts_with
-      value: /data/projects
-    - attribute: full_name
-      operator: does_not_contain
-      value: .tmp
-  actions:
-    - type: run_script
-      params:
-        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" projects
-    - type: log
-      params:
-        message: "Uploaded to iDrive S3 [projects]: {full_name}"
-  stop_processing: true
-
-- name: "iDrive S3 Upload — /data/areas"
+- name: "Tag + Upload — /data/areas"
   enabled: true
   match: all
   conditions:
@@ -128,11 +108,94 @@
     - attribute: full_name
       operator: does_not_contain
       value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .meta.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ffprobe.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .acoustid.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ocr.txt
   actions:
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/tag-and-analyze.sh "$FW_FILE"
     - type: run_script
       params:
         script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" areas
     - type: log
       params:
-        message: "Uploaded to iDrive S3 [areas]: {full_name}"
+        message: "Tagged + uploaded [areas]: {full_name}"
+  stop_processing: true
+
+- name: "Tag + Upload — /data/projects"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/projects
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .meta.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ffprobe.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .acoustid.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ocr.txt
+  actions:
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/tag-and-analyze.sh "$FW_FILE"
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" projects
+    - type: log
+      params:
+        message: "Tagged + uploaded [projects]: {full_name}"
+  stop_processing: true
+
+- name: "Tag + Upload — /data/archive"
+  enabled: true
+  match: all
+  conditions:
+    - attribute: path
+      operator: starts_with
+      value: /data/archive
+    - attribute: full_name
+      operator: does_not_contain
+      value: .tmp
+    - attribute: full_name
+      operator: does_not_contain
+      value: .meta.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ffprobe.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .acoustid.json
+    - attribute: full_name
+      operator: does_not_contain
+      value: .ocr.txt
+  actions:
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/tag-and-analyze.sh "$FW_FILE"
+    - type: run_script
+      params:
+        script: bash /opt/filewarden/scripts/upload-to-idrive-s3.sh "$FW_FILE" archive
+    - type: log
+      params:
+        message: "Tagged + uploaded [archive]: {full_name}"
   stop_processing: true

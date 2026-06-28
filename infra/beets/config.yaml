@@ -1,0 +1,73 @@
+# Beets music library configuration — SJL pipeline
+# Installed by: bash /opt/filewarden/scripts/install-tagging-deps.sh
+# Docs: https://beets.readthedocs.io/
+
+directory: /data/resources/audio
+library: /var/lib/beets/musiclibrary.db
+
+import:
+  move: no           # never move files — PARA/FileWarden handles routing
+  copy: no           # never copy — tag in-place
+  write: yes         # write tags back to files (ID3/FLAC/MP4/OGG)
+  quiet: yes
+  timid: no
+  log: /var/log/filewarden/beets-import.log
+  languages: en
+
+# Exhaustive tag write-back — everything available gets written
+paths:
+  default: $albumartist/$album ($year)/$track - $title
+  singleton: Non-Album/$artist/$title
+  comp: Compilations/$album ($year)/$track - $title
+
+plugins:
+  - chroma          # AcoustID audio fingerprinting (identifies unknown tracks)
+  - fetchart        # download album art
+  - embedart        # embed album art into file
+  - lastgenre       # fetch genre from Last.fm
+  - scrub           # clean extraneous tags before writing
+  - missing         # report missing tracks
+  - duplicates      # detect duplicates
+  - info            # CLI info tool
+  - filefilter      # skip unwanted files
+
+# AcoustID — free fingerprinting service, no account needed
+acoustid:
+  apikey: 8XaBELgH   # public community key for personal/non-commercial use
+
+# MusicBrainz lookup
+musicbrainz:
+  searchlimit: 10
+  extra_tags: [year, catalognum, country, media, label]
+
+# Match thresholds — generous for auto-import
+match:
+  strong_rec_thresh: 0.10
+  medium_rec_thresh: 0.25
+  preferred:
+    countries: [US, GB, XW]
+    media: [Digital Media, CD]
+
+# Album art — embed + save alongside file
+fetchart:
+  auto: yes
+  maxwidth: 1200
+  sources: [filesystem, coverart, itunes, amazon, albumart]
+
+embedart:
+  auto: yes
+  maxwidth: 1200
+
+# Genre — fetch from Last.fm
+lastgenre:
+  auto: yes
+  canonical: yes
+  count: 3
+
+# Scrub extra tags before writing clean set
+scrub:
+  auto: yes
+
+# Skip non-audio files
+filefilter:
+  path: .+\.(mp3|flac|m4a|aac|ogg|opus|wma|aiff|alac|wav)$
