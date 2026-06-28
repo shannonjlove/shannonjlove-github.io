@@ -1,0 +1,247 @@
+# FileWarden v2 — Reference Configuration
+# SJL Sovereign Cloud | SJL-CLOUD-FILE-GOVERNANCE-v7.3
+#
+# Copy this file to /opt/sjl/filewarden.yaml and adjust values.
+# Secrets belong in /opt/secrets (root-only) — never in this file.
+# Reference variable names here; store values in the secrets store.
+
+# ─── Paths ────────────────────────────────────────────────────────────────────
+
+sjl_root: /srv/sjl
+registry_path: /srv/sjl/08000_APPLICATION-DATA/filewarden/filewarden.db
+sidecar_base: /srv/sjl/.sidecars
+watch_paths:
+  - /srv/sjl/01000_INBOX
+
+# ─── Stabilize Stage ──────────────────────────────────────────────────────────
+
+# Seconds to wait between size-stability polls
+stabilize_poll_seconds: 5
+# Number of consecutive stable polls required
+stabilize_poll_checks: 3
+# Maximum wait seconds before aborting (0 = unlimited)
+stabilize_timeout_seconds: 300
+# Minimum file size in bytes to process (0 = disabled)
+stabilize_min_bytes: 0
+# Files larger than this (bytes) trigger extended size polling
+stabilize_large_file_bytes: 104857600  # 100 MB
+# Seconds between polls for large-file extended checks
+stabilize_large_poll_seconds: 10
+# Number of polls for large-file extended checks
+stabilize_large_poll_checks: 3
+
+# ─── Identify Stage ───────────────────────────────────────────────────────────
+
+# Prefix for generated DOCIDs
+docid_prefix: SJL-CLOUD
+# Counter file for sequential DOCID numbers
+docid_counter_file: /srv/sjl/08000_APPLICATION-DATA/filewarden/docid_counter
+
+# ─── Version Stage ────────────────────────────────────────────────────────────
+
+# Directory to archive prior versions (relative to sidecar bundle)
+versions_dir: versions
+
+# ─── Mirror Stage ─────────────────────────────────────────────────────────────
+
+# rclone remote name (configure separately in rclone.conf)
+mirror_rclone_remote: sjl-e2
+# Remote base path on iDrive E2
+mirror_remote_path: sjl-mirror
+# Seconds before mirror verification times out
+mirror_verify_timeout: 120
+
+# ─── Hook / HookVault ─────────────────────────────────────────────────────────
+
+# HookVault base URL (no trailing slash)
+# Value stored in: /opt/secrets/hookvault_url
+hookvault_url_env: HOOKVAULT_URL
+# HookVault API key environment variable name
+hookvault_api_key_env: HOOKVAULT_API_KEY
+
+# ─── Publish Stage ────────────────────────────────────────────────────────────
+
+# BookStack API base URL
+# Value stored in: /opt/secrets/bookstack_url
+bookstack_url_env: BOOKSTACK_URL
+bookstack_api_key_env: BOOKSTACK_API_KEY
+# BookStack shelf ID for governance records
+bookstack_shelf_id: 1
+
+# PaperParrot / Paperless-ngx API
+paperparrot_url_env: PAPERPARROT_URL
+paperparrot_api_key_env: PAPERPARROT_API_KEY
+# MIME types eligible for PaperParrot archival
+paperparrot_eligible_types:
+  - application/pdf
+  - image/png
+  - image/jpeg
+  - image/tiff
+
+# ─── Skill: Subfolder Traversal ───────────────────────────────────────────────
+
+subfolder_max_depth: 10
+subfolder_min_depth: 0
+subfolder_skip_folders:
+  - .git
+  - .sidecars
+  - node_modules
+  - __pycache__
+subfolder_skip_files:
+  - .DS_Store
+  - Thumbs.db
+
+# ─── Skill: Screenshot Sort ───────────────────────────────────────────────────
+
+# Set true to classify all images, not just filenames containing "screenshot"
+screenshot_sort_all_images: false
+
+# ─── Skill: Merge Backup ──────────────────────────────────────────────────────
+
+merge_backup_enabled: false
+merge_backup_destinations: []
+#  - /mnt/backup-primary
+#  - /mnt/backup-secondary
+merge_backup_preserve_structure: true
+
+# ─── Skill: PDF OCR Detection ─────────────────────────────────────────────────
+
+pdf_ocr_detect_enabled: true
+# Submit to OCR queue when text layer is missing
+pdf_ocr_submit: true
+# n8n webhook URL for OCR queue (optional; falls back to local ocrmypdf)
+# Value stored in: /opt/secrets/n8n_ocr_webhook
+n8n_ocr_webhook_env: N8N_OCR_WEBHOOK_URL
+# Language(s) for Tesseract
+ocr_language: eng
+
+# ─── Skill: PDF Size Reduction ────────────────────────────────────────────────
+
+pdf_reduce_size: false
+# Quality profile: screen | ebook | printer | prepress
+pdf_reduce_quality: ebook
+# PDF compatibility level for Ghostscript
+pdf_reduce_compat: "1.4"
+
+# ─── Skill: Content Classification ───────────────────────────────────────────
+
+# Entity list for content-aware routing (Hazel "one rule vs hundreds" pattern)
+# Each entry: match_patterns (filename globs or text substrings), display_name,
+#             para (five-digit code), subpath (relative to sjl_root/para)
+entity_list: []
+#  - match_patterns:
+#      - "Invoice*"
+#      - "receipt"
+#    display_name: Financial Documents
+#    para: "03000"
+#    subpath: 03100_FINANCE/03110_INVOICES
+
+# Sequence counter file for "perfect filing" sequential numbering
+content_classify_sequence_file: /srv/sjl/08000_APPLICATION-DATA/filewarden/classify_sequence.json
+
+# ─── Skill: Image GPS Tagging ─────────────────────────────────────────────────
+
+image_gps_enabled: false
+# Geocoding provider: nominatim | google
+geocoding_provider: nominatim
+# Google Geocoding API key env var (only needed if provider = google)
+google_geocoding_key_env: GOOGLE_GEOCODING_KEY
+# Write geocoded location back to EXIF via ExifTool
+gps_write_exif: true
+# Append location to semantic title
+gps_update_semantic_title: false
+
+# ─── Skill: Video Sort ────────────────────────────────────────────────────────
+
+# Destination paths relative to sjl_root
+video_sort_tv_dest: 06000_PRIVATE-MEDIA/06100_TV
+video_sort_movie_dest: 06000_PRIVATE-MEDIA/06200_MOVIES
+video_sort_unknown_dest: 06000_PRIVATE-MEDIA/06300_UNSORTED
+
+# ─── Skill: Video Convert ─────────────────────────────────────────────────────
+
+video_convert_enabled: false
+# Preferred tool: handbrake | ffmpeg
+video_convert_tool: handbrake
+# HandBrakeCLI preset name
+video_convert_preset: "H.265 MKV 1080p30"
+# ffmpeg CRF value (lower = higher quality)
+video_convert_crf: 23
+# ffmpeg video codec
+video_convert_codec: libx265
+# Archive original after conversion
+video_convert_archive_original: true
+
+# ─── Skill: Audio Convert ─────────────────────────────────────────────────────
+
+audio_convert_enabled: false
+# Codecs that trigger conversion (detected via ffprobe)
+audio_convert_trigger_codecs:
+  - dts
+  - flac
+# Target codec for video container re-encode
+audio_convert_target_codec: ac3
+# Audio bitrate
+audio_convert_bitrate: 640k
+# Archive original after conversion
+audio_convert_archive_original: true
+
+# ─── Skill: Date Archive ──────────────────────────────────────────────────────
+
+date_archive_enabled: false
+# Days before routing to monthly archive bucket
+date_archive_monthly_days: 7
+# Days before routing to yearly archive bucket
+date_archive_yearly_days: 42
+# Batch window: only process during these time windows
+date_archive_batch_windows: []
+#  - start: "02:00"
+#    end:   "05:00"
+# Scan cache file (tracks last-processed timestamps)
+date_archive_cache_file: /srv/sjl/08000_APPLICATION-DATA/filewarden/date_archive_cache.json
+
+# ─── Skill: New Files Only ────────────────────────────────────────────────────
+
+new_files_only_enabled: false
+# Minimum age in seconds before a file is eligible
+new_files_only_min_age_seconds: 60
+# Batch windows (same format as date_archive_batch_windows)
+new_files_only_batch_windows: []
+# Scan cache file
+new_files_only_cache_file: /srv/sjl/08000_APPLICATION-DATA/filewarden/new_files_cache.json
+
+# ─── Skill: MP4 Gather ────────────────────────────────────────────────────────
+
+mp4_gather_enabled: false
+mp4_gather_dest: 06000_PRIVATE-MEDIA/06400_GATHERED
+
+# ─── Skill: Move Parent Folder ────────────────────────────────────────────────
+
+parent_folder_trigger_extensions: []
+#  - .nfo
+#  - .srt
+
+# ─── Skill: DMG Extract ───────────────────────────────────────────────────────
+
+dmg_extract_enabled: false
+dmg_extract_dest: 08000_APPLICATION-DATA/08100_INSTALLERS
+
+# ─── Skill: Notes Publish ─────────────────────────────────────────────────────
+
+notes_publish_enabled: false
+# Publish a BookStack page for every governed file
+notes_publish_bookstack: true
+
+# ─── Skill: YAML Tag Extract ──────────────────────────────────────────────────
+
+yaml_tag_extract_enabled: true
+# Write parsed tags to extended attributes
+yaml_tag_write_xattrs: true
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+
+log_level: INFO
+log_file: /var/log/sjl/filewarden.log
+# Maximum log file size in bytes before rotation
+log_max_bytes: 10485760  # 10 MB
+log_backup_count: 5

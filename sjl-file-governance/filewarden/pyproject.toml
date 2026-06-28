@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "filewarden"
+version = "2.0.0"
+description = "SJL Sovereign Cloud File Governance Engine"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "watchdog>=3.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "python-xattr",
+    "pillow",
+    "pypdf2",
+]
+dev = [
+    "pytest>=7",
+    "pytest-mock",
+]
+
+[project.scripts]
+filewarden = "filewarden.filewarden:main"
+
+[tool.setuptools.packages.find]
+where = [".."]
+include = ["filewarden*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
