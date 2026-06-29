@@ -1,0 +1,36 @@
+[Unit]
+Description=WebTop — Browser Desktop (ubuntu-mate)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=lscr.io/linuxserver/webtop:ubuntu-mate
+ContainerName=webtop
+
+Environment=PUID=0
+Environment=PGID=0
+Environment=TZ=America/Chicago
+
+# Optional: custom title and locale
+Environment=TITLE=SJL WebTop
+Environment=LANG=en_US.UTF-8
+
+# Web UI (HTTP desktop) — proxied by NPM to webtop.shannonjlove.cloud
+PublishPort=127.0.0.1:3000:3000
+# HTTPS direct (optional)
+PublishPort=127.0.0.1:3001:3001
+
+# Shared data volume — full access to PARA filesystem
+Volume=/data:/data:z
+# Persistent WebTop home and config
+Volume=/opt/webtop/config:/config:z
+
+# Shared memory for browser smoothness
+Tmpfs=/dev/shm
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target default.target
