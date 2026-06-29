@@ -768,12 +768,15 @@ Completed / inactive since 2014–2023:
 |---|---|---|
 | `filewarden.py` | `SJL-Personal-Server_PROJECTS_gDrive/Auto/` | Watchdog: auto-rename + auto-hook |
 | `hookvault.py` | Same | Webhook manager: fires HookVault payloads to Raindrop + SJL Hub |
+| `tagbot.py` | `shannonjlove.cloud:8001` | Media recognition + auto-tagging service (see Part 11) |
 | `diffforge.py` | Same | Diff/comparison utility |
 | `DEPLOY.sh` | Same | Deployment script |
 | `config.yaml` | Same | FileWarden rules: inbox routing, categories, rename patterns |
 | Raindrop.io | Cloud | Universal link browser; Hookmark equivalent for cloud files |
 | SJL Hub | `hub.shannonjlove.cloud` | Custom cluster management UI (see Part 10) |
-| n8n | shannonjlove.cloud | Automation platform; receives HookVault webhooks |
+| n8n | shannonjlove.cloud | Automation platform; LLM nodes point to Ollama (not Claude API) |
+| Ollama | `shannonjlove.cloud:11434` | Self-hosted LLM server; replaces Claude/OpenAI API in all automations |
+| NeoFinder | Mac (licensed) | Disk cataloger; pre-seeds TagBot with embedded EXIF/ID3 metadata |
 | Paper Parrot | TBD | Document export destination |
 
 ---
@@ -1521,3 +1524,440 @@ Raindrop entry with enriched tags (UUID24 stays stable; Raindrop entry updated i
 - [ ] Test with sample files from each type (photo, video, PDF, audio)
 - [ ] Add DeepFace handler (opt-in, configured per run or per folder)
 - [ ] Add rawpy handler for RAW camera files
+- [ ] Install Ollama + pull mistral:7b and phi3:mini (see below)
+- [ ] Wire NeoFinder catalog export into TagBot cache pre-seed (see below)
+
+---
+
+### OLLAMA — SELF-HOSTED LLM LAYER (ZERO API COST)
+
+Ollama runs open-source LLMs locally on `shannonjlove.cloud`. It serves two roles:
+
+**Role 1 — Replace Claude/OpenAI API in n8n automations**
+Any n8n workflow using an Anthropic or OpenAI node swaps to the Ollama node:
+```
+n8n Ollama node → base URL: http://localhost:11434
+model: mistral:7b  (or phi3:mini for faster/lighter tasks)
+```
+Zero token cost. No external API calls. Runs offline.
+
+**Role 2 — TagBot synthesis layer (text reasoning over ML outputs)**
+After CLIP/YOLO/BLIP return raw tags, Ollama synthesizes them into a clean
+SJL filename description and ranked tag set:
+```python
+prompt = f"""
+You are a file naming assistant. Given these raw analysis results for a file,
+return a clean 3-6 word hyphenated description (for a filename) and up to 8 tags.
+
+CLIP tags: {clip_tags}
+Objects detected: {yolo_objects}
+Image caption: {blip_caption}
+Speech transcript excerpt: {whisper_excerpt}
+
+Respond as JSON: {{"description": "...", "tags": [...]}}
+"""
+response = ollama.chat(model="mistral:7b", messages=[{"role": "user", "content": prompt}])
+```
+This is the "glue" layer — takes noisy ML outputs and makes them SJL-clean.
+
+**Recommended Ollama models for shannonjlove.cloud (CPU-only):**
+
+| Model | Size | RAM | Speed on CPU | Best for |
+|---|---|---|---|---|
+| `phi3:mini` | 2.3 GB | 3 GB | Fast (~10s) | Simple tag synthesis, short text |
+| `mistral:7b` | 4.1 GB | 6 GB | Moderate (~30s) | Richer reasoning, n8n workflows |
+| `llama3.1:8b` | 4.7 GB | 7 GB | Moderate (~35s) | Best quality general reasoning |
+| `llava:7b` | 4.5 GB | 7 GB | Slow (~60-120s) | Vision-language (replaces BLIP+CLIP if GPU added) |
+| `nomic-embed-text` | 274 MB | 500 MB | Fast (~2s) | Semantic embeddings for SJL Hub search |
+
+**Install:**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull phi3:mini
+ollama pull mistral:7b
+ollama pull nomic-embed-text   # for semantic search in SJL Hub
+pm2 start "ollama serve" --name ollama
+```
+
+**When to call Ollama in TagBot pipeline:**
+```
+IF blip_caption is generic ("a photo of a person")
+OR clip_tags conflict with yolo_objects
+OR description segment would exceed 40 chars
+THEN call Ollama to synthesize → cleaner description + prioritized tags
+
+FOR all documents/PDFs:
+  always call Ollama to summarize KeyBERT keywords into a description
+```
+
+**n8n Ollama node swap (replaces any Claude/Anthropic node):**
+```
+Node type:    AI → Ollama Chat Model
+Base URL:     http://localhost:11434
+Model:        mistral:7b
+Temperature:  0.3 (low — deterministic outputs for file naming)
+```
+
+---
+
+### NEOFINDER — MAC-SIDE PRE-PROCESSOR
+
+NeoFinder (licensed) is a macOS disk cataloger that reads embedded metadata from
+every file it indexes — EXIF from photos, ID3/AAC tags from audio, video track info,
+PDF metadata, file stats. It catalogs files on disconnected drives, DVDs, and external
+storage. It runs on your Mac, not on the server.
+
+**Role in SJL pipeline:** First-pass metadata extraction for files that originate
+on your Mac or local storage before they reach the server. Files with rich embedded
+metadata skip the heavyweight ML models entirely — TagBot just reads the pre-populated
+cache entry and moves on.
+
+**What NeoFinder reads automatically (no ML):**
+
+| File type | Metadata extracted |
+|---|---|
+| Photos (JPG/HEIC/RAW) | Date taken, GPS coords, camera model, lens, aperture, ISO, shutter |
+| Audio (MP3/AAC/FLAC) | Artist, album, title, genre, BPM, year, track #, album art |
+| Video (MP4/MOV) | Duration, resolution, codec, frame rate, creation date |
+| PDF | Title, author, subject, keywords (if embedded), page count |
+| All files | Filename, size, created, modified, file type, path |
+
+**Export format:** NeoFinder exports to tab-delimited text or can be queried via
+AppleScript. A small export script runs on your Mac and outputs `neofinder_export.json`
+which uploads to `shannonjlove.cloud/data/tagbot/prefill/`.
+
+**TagBot integration — NeoFinder pre-seed:**
+```python
+def _check_neofinder_cache(file_path: str) -> dict | None:
+    """Check if NeoFinder already cataloged this file (by filename + size hash)."""
+    nf_cache = load_neofinder_export("/data/tagbot/prefill/neofinder_export.json")
+    match = nf_cache.get(file_key(file_path))
+    if match and match.get("metadata_richness") > 0.6:
+        return {
+            "suggested_description": match["derived_description"],
+            "tags": match["derived_tags"],
+            "source": "neofinder",
+            "skip_ml": True   # bypass CLIP/BLIP/YOLO entirely
+        }
+    return None  # proceed to ML pipeline
+```
+
+**When NeoFinder pre-seed is sufficient (skip all ML):**
+- Photo with full EXIF (date, GPS, camera) → description from GPS + date, tags from camera metadata
+- Audio with complete ID3 tags → description from artist-title, tags from genre + year
+- Video with creation date + duration → basic description; still run Whisper for content tags
+
+**When NeoFinder is not sufficient (proceed to ML):**
+- Screenshot, downloaded image (no EXIF)
+- Video with no embedded metadata
+- Scanned PDF (no digital text)
+- Any file with sparse or missing embedded metadata
+
+**NeoFinder → SJL pipeline on Mac (Hazel automation):**
+```
+Hazel watches ~/Downloads (or designated drop folder)
+  → file arrives
+  → Hazel triggers NeoFinder AppleScript: catalog this file
+  → NeoFinder reads metadata
+  → export script appends to neofinder_export.json
+  → rsync / Transmit uploads export to shannonjlove.cloud
+  → Hazel moves file to cloud @INBOX
+  → FileWarden picks it up on the server
+  → TagBot checks NeoFinder pre-seed first
+```
+
+---
+
+### COMPLETE STACK RANKING — ALL OPTIONS DELIBERATED
+
+This ranks every recognition option available across the full SJL system, from
+fastest/cheapest to slowest/heaviest. Build in this order — each tier adds value
+on top of the last.
+
+---
+
+**TIER 1 — Always run. Zero ML. Instant. (Run first, always.)**
+
+**Rank 1 — NeoFinder catalog pre-seed**
+```
+Cost:       $0 (licensed)
+Speed:      Instant (cache lookup)
+Coverage:   Any file NeoFinder has already cataloged on your Mac
+RAM:        0 (file read, no model)
+Advantage:  Perfect accuracy for what it reads; skips all ML entirely
+            Handles photos with GPS/EXIF, audio with ID3, video with track data
+            Works for files on disconnected drives and old archives
+Drawback:   Mac-only; requires NeoFinder ran on the file first
+            Useless for files that arrive on the server without passing through Mac
+            No content intelligence — only reads what's already embedded
+Decision:   ALWAYS run first. If pre-seed score > 0.6, skip ML pipeline entirely.
+```
+
+**Rank 2 — mutagen (audio/video metadata)**
+```
+Cost:       $0
+Speed:      <50ms per file
+Coverage:   MP3, AAC, FLAC, OGG, MP4, M4A, WAV
+RAM:        Negligible
+Advantage:  Reads embedded ID3/MP4 tags with 100% accuracy; no model needed
+            Artist, album, genre, BPM, year, track title — all ready for SJL tags
+Drawback:   Only reads what's already tagged; useless for untagged music or video
+            No content analysis — doesn't understand what's in an untagged file
+Decision:   ALWAYS run on audio/video before any ML. Free metadata is better than
+            inferred metadata.
+```
+
+---
+
+**TIER 2 — Fast ML. Run on every file after Tier 1. Low RAM, CPU-friendly.**
+
+**Rank 3 — YOLOv8n (object detection)**
+```
+Cost:       $0
+Speed:      50–150ms per image (nano model, CPU)
+RAM:        100 MB
+Coverage:   80 standard object classes (person, car, phone, book, dog, etc.)
+Advantage:  Fastest ML model in the stack; extremely reliable for common objects
+            Pairs perfectly with CLIP — YOLO finds objects, CLIP finds scene context
+            YOLOv8s (small) adds accuracy for only 200ms more
+Drawback:   Only 80 COCO classes — can't detect "screenplay" or "concert stage"
+            No scene understanding; no captions; no custom categories without fine-tuning
+Decision:   ALWAYS run on images. Cheap signal with no downside.
+```
+
+**Rank 4 — CLIP ViT-B/32 (zero-shot image tagging)**
+```
+Cost:       $0
+Speed:      200ms per image (CPU)
+RAM:        600 MB
+Coverage:   Unlimited — any concept you can describe in words
+Advantage:  No training data needed; give it YOUR tag vocabulary and it scores each
+            Can distinguish "outdoor concert" from "studio session" from "church service"
+            Perfect for SJL taxonomy: creative, media, personal, project categories
+Drawback:   Scoring against a list — you must define the tag vocabulary upfront
+            Doesn't generate text; only ranks pre-defined tags by similarity
+            ViT-L/14 (large) is more accurate but 3x slower and 4x more RAM
+Decision:   ALWAYS run on images alongside YOLO. These two together cover ~80% of
+            tagging needs without heavier models.
+```
+
+**Rank 5 — faster-whisper small (speech transcription)**
+```
+Cost:       $0
+Speed:      3–5× realtime on CPU (60s video → 12–20s to transcribe)
+RAM:        500 MB
+Coverage:   Any audio track — video, podcast, voice memo, interview
+Advantage:  Best open-source transcription available; multilingual; 99% accuracy
+            Transcript becomes searchable content AND source for keyword extraction
+            VAD (voice activity detection) built-in — skips silence and music
+            faster-whisper is 4× faster than openai-whisper on same hardware
+Drawback:   Useless on music-only content (no lyrics transcription without fine-tuning)
+            Long videos (60+ min) still take real processing time on CPU
+            medium model: 2× better but 2× slower — use for important content only
+Decision:   ALWAYS run on video and audio. Even a partial transcript is more useful
+            than no content signal. Use base model by default; medium for key projects.
+```
+
+**Rank 6 — KeyBERT + all-MiniLM-L6-v2 (keyword extraction)**
+```
+Cost:       $0
+Speed:      <1s per document
+RAM:        120 MB
+Coverage:   Any text input (transcripts, PDF text, DOCX content)
+Advantage:  Semantic extraction — finds concepts, not just frequent words
+            "feature film second act" beats "the and of a" (TF-IDF style)
+            Tiny model; always loaded; adds negligible overhead
+Drawback:   Downstream only — needs text input from Marker/Tesseract/Whisper first
+            Not generative — extracts from existing text, doesn't reason about it
+Decision:   ALWAYS run on text output from any other step. Zero reason not to.
+```
+
+---
+
+**TIER 3 — Moderate ML. Run when Tier 2 doesn't provide enough signal.**
+
+**Rank 7 — BLIP-base (image captioning)**
+```
+Cost:       $0
+Speed:      2–4s per image (CPU)
+RAM:        900 MB
+Coverage:   Any image
+Advantage:  Generates natural language — "a woman speaking at an outdoor podium"
+            That sentence becomes the SJL filename description field directly
+            Fills the gap CLIP leaves: CLIP tags, BLIP describes
+Drawback:   Captions can be generic ("a person standing near a building")
+            Slower than CLIP/YOLO; may not justify time for bulk processing
+            BLIP-2 is far richer but far slower (see Rank 10)
+Decision:   Run on images where CLIP+YOLO output is ambiguous or too sparse.
+            Skip for bulk archive processing (use CLIP+YOLO tags as description instead).
+```
+
+**Rank 8 — Marker (digital PDF → Markdown)**
+```
+Cost:       $0
+Speed:      5–15s per page (CPU)
+RAM:        1.5 GB
+Coverage:   Digital (non-scanned) PDFs with selectable text
+Advantage:  Best PDF → structured text conversion available; preserves tables, headings
+            Output feeds directly into KeyBERT for keyword extraction
+            Far better than PyPDF2/pdfminer for complex multi-column layouts
+Drawback:   Slow for large PDFs (50-page doc = several minutes)
+            Overkill for simple single-column text PDFs (use pdfminer for speed)
+            Not needed for scanned PDFs (use Tesseract instead)
+Decision:   Run on PDFs over 5 pages or with complex layouts. Use pdfminer as fast
+            fallback for simple text documents.
+```
+
+**Rank 9 — Tesseract 5 (OCR for scanned PDFs and images)**
+```
+Cost:       $0
+Speed:      1–5s per page (CPU)
+RAM:        Minimal
+Coverage:   Scanned PDFs, image-based documents, photos of text
+Advantage:  Mature, accurate, 100+ languages, handles most printed text well
+            Necessary for any file that isn't digitally created (old scans, archives)
+Drawback:   Struggles with handwriting, degraded paper, unusual fonts
+            Needs preprocessing (deskew, denoise) for dirty scans
+            Doesn't understand document structure — outputs raw text only
+Decision:   Run only when Marker returns < 100 characters (likely a scanned file).
+            Pair with opencv preprocessing for better results on old documents.
+```
+
+---
+
+**TIER 4 — LLM synthesis layer. Run after Tier 2/3 to unify and clean outputs.**
+
+**Rank 10 — Ollama + phi3:mini (fast synthesis)**
+```
+Cost:       $0 (self-hosted)
+Speed:      8–15s per request on CPU
+RAM:        3 GB
+Coverage:   Any text synthesis, summarization, tag cleaning, n8n automation
+Advantage:  Intelligent synthesis of noisy ML outputs into clean SJL descriptions
+            Replaces ALL Claude/Anthropic API calls in n8n at zero token cost
+            phi3:mini punches far above its weight — Microsoft's efficient model
+            Runs alongside full TagBot stack (3GB RAM is additive to ~4.2GB)
+Drawback:   Still 8-15s per file — adds meaningful time to real-time processing
+            phi3 can hallucinate on domain-specific content (film/music terminology)
+            Not multimodal — can't see images; only reasons about text/tag inputs
+Decision:   Run as synthesis step for CLIP+YOLO+BLIP outputs when combined
+            signal is ambiguous. ALWAYS use as n8n Claude API replacement.
+```
+
+**Rank 11 — Ollama + mistral:7b (richer synthesis)**
+```
+Cost:       $0 (self-hosted)
+Speed:      25–45s per request on CPU
+RAM:        6 GB
+Coverage:   Same as phi3 but more capable reasoning
+Advantage:  Better instruction-following than phi3; more reliable JSON output
+            Better at understanding creative/film/music domain context
+            Instruction-tuned variant (mistral-instruct) follows prompts cleanly
+Drawback:   Adds 25–45s per file in real-time mode — significant for large batches
+            6 GB RAM barely leaves headroom if full TagBot stack is running
+            Swap with phi3:mini for batch jobs where speed matters
+Decision:   Use for n8n automation reasoning tasks (longer context, better quality).
+            Use phi3:mini for TagBot synthesis (speed matters more there).
+```
+
+---
+
+**TIER 5 — Heavy ML. Requires GPU or significant patience on CPU.**
+
+**Rank 12 — DeepFace (face recognition)**
+```
+Cost:       $0
+Speed:      1–3s per image on CPU (after face DB is built)
+RAM:        500 MB + face database
+Coverage:   Photos containing human faces
+Advantage:  Identifies the same person across thousands of photos automatically
+            Tags family members, collaborators, subjects by name
+            Enables queries like "all photos with Asha" across entire library
+Drawback:   Requires a curated "seed" database of named faces to match against
+            Privacy consideration — builds a biometric database of people
+            False positives in low-light or partially obscured faces
+            Ethical constraint: only use on your own photos of people who consent
+Decision:   Opt-in only. Configure per-folder. Seed with family/collaborator photos.
+            Do NOT run by default on all incoming files.
+```
+
+**Rank 13 — BLIP-2 (rich image captioning)**
+```
+Cost:       $0
+Speed:      10–30s per image on CPU
+RAM:        4–6 GB (opt-2.7b variant)
+Coverage:   Any image
+Advantage:  Dramatically richer captions than BLIP-base
+            Can answer visual questions: "is this indoors or outdoors?"
+            Better at complex scenes (concerts, events, multi-person shots)
+Drawback:   4–6 GB RAM competes directly with Ollama for headspace
+            30s per image is impractical for real-time processing of photo libraries
+            The quality jump over BLIP-base rarely justifies the speed cost on CPU
+Decision:   Skip unless GPU is added. BLIP-base + Ollama synthesis achieves
+            comparable quality at lower total RAM and similar wall-clock time.
+```
+
+**Rank 14 — Ollama + LLaVA:7b (vision-language, richest possible output)**
+```
+Cost:       $0
+Speed:      60–180s per image on CPU
+RAM:        7–8 GB
+Coverage:   Any image — understands composition, mood, context, text in image
+Advantage:  One model replaces CLIP + BLIP + YOLO for images — unified pipeline
+            Can read text in images (signs, titles, on-screen text)
+            Understands creative intent: "dramatic low-key portrait lighting"
+            Best possible single-model output for image description
+Drawback:   60–180 seconds per image on CPU is untenable for any real volume
+            Displaces Ollama text models from RAM if run simultaneously
+            GPU (8GB VRAM minimum) is effectively required for practical use
+Decision:   DO NOT run on CPU for production. Add to the stack ONLY when GPU
+            is added to the server. With GPU: replaces CLIP + BLIP entirely for images.
+            With GPU (RTX 3060 12GB or better): 3–5s per image — excellent.
+```
+
+---
+
+### FINAL RECOMMENDED OPERATING STACK (CPU-ONLY, TODAY)
+
+```
+LAYER         TOOL                    WHEN                        TIME/FILE
+──────────    ──────────────────────  ─────────────────────────   ──────────
+Pre-seed      NeoFinder export        Always first                 <50ms
+              mutagen                 Audio/video always           <50ms
+
+Object/Scene  YOLOv8n                 All images                   ~100ms
+              CLIP ViT-B/32           All images                   ~200ms
+
+Captioning    BLIP-base               Images w/ low CLIP signal    2–4s
+
+Speech        faster-whisper small    All video + audio            3–5× RT
+
+Text          Marker (or pdfminer)    Digital PDFs                 5–15s/pg
+              Tesseract               Scanned PDFs                 1–5s/pg
+              KeyBERT + MiniLM        All text output              <1s
+
+Synthesis     Ollama phi3:mini        Tag consolidation            8–15s
+              (batch mode: async)     n8n workflow LLM             8–15s
+
+Optional      DeepFace                Personal photos, opt-in      1–3s
+              faster-whisper medium   Key project video            2× RT
+```
+
+**GPU upgrade path:** Add any RTX 3060 12GB or better to the server →
+LLaVA:7b replaces CLIP+BLIP+YOLO for images (3–5s unified), Whisper medium
+becomes real-time, BLIP-2 becomes practical. Total per-file time drops from
+~15–30s to ~5–8s for a full media file.
+
+**RAM budget summary (all running simultaneously):**
+```
+TagBot models (CLIP + BLIP + YOLO + Whisper + KeyBERT + Marker): ~4.2 GB
+Ollama phi3:mini:                                                  ~3.0 GB
+OS + FileWarden + HookVault + n8n:                                 ~2.0 GB
+──────────────────────────────────────────────────────────────────────────
+Total:                                                             ~9.2 GB
+Recommended server RAM:                                            16 GB
+```
+
+If current server has < 16 GB: run Ollama on-demand (start/stop per job) rather
+than always-on, and defer BLIP-base to batch mode only. Minimum viable is 8 GB
+running CLIP + YOLO + Whisper + KeyBERT only (~3 GB model RAM).
