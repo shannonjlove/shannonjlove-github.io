@@ -85,15 +85,15 @@ Location: `filewarden/skills/`
 | Skill module | Stage | Purpose |
 |---|---|---|
 | skill_stabilize_timing | stabilize | Lock detection, size-stability polling |
-| skill_docid_assign | identify | Sequential DOCID counter |
-| skill_subfolder_traversal | analyze | Recursive inbox scan |
+| skill_subfolder_traverse | analyze/pre | Depth-gated recursive inbox scan |
 | skill_content_classify | analyze | Entity-list content routing |
 | skill_screenshot_sort | analyze | Device resolution → PARA route |
 | skill_pdf_ocr_detect | analyze | Text-layer detection + OCR queue |
 | skill_image_gps_tag | analyze | EXIF GPS → Nominatim geocode |
 | skill_yaml_tag_extract | analyze | Front-matter tag extraction |
+| skill_tag_from_yaml | analyze | Alias: extract_yaml_tags for tag-only run |
 | skill_xattr_tag | analyze/sidecar | macOS/Linux xattr read/write (Finder tags, SJL namespace) |
-| skill_pdf_reduce_size | version | Ghostscript compression |
+| skill_pdf_size_reduce | version | Ghostscript compression |
 | skill_video_sort | rename | TV/Movie detection → 06000 routes |
 | skill_video_convert | rename | HandBrake/ffmpeg H.265 conversion |
 | skill_audio_convert | rename | DTS/FLAC → AC3 re-encode |

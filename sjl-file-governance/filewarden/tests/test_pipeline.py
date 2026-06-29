@@ -59,13 +59,12 @@ def test_skill_runs_in_pipeline(tmp_path: Path) -> None:
 
     pipeline = Pipeline(config={})
 
-    # Minimal stage stubs so the pipeline can complete
+    # Replace all stage functions with noops so the pipeline completes
     def _noop(tx: Transaction, config: dict) -> None:
         pass
 
-    for stage in ["stabilize", "identify", "analyze", "version",
-                  "rename", "sidecar", "hook", "mirror", "register", "publish"]:
-        pipeline.register_stage(stage, _noop)
+    for stage in pipeline._stage_funcs:
+        pipeline._stage_funcs[stage] = _noop
 
     from filewarden.core.pipeline import load_skills
     load_skills(pipeline)
@@ -79,25 +78,36 @@ def test_skill_runs_in_pipeline(tmp_path: Path) -> None:
 # ─── Registry ─────────────────────────────────────────────────────────────────
 
 def test_registry_upsert_and_lookup(tmp_path: Path) -> None:
-    from filewarden.core.registry import load as load_registry, Registry
+    from filewarden.core.registry import load as load_registry, upsert, find_by_docid
 
     config = {"registry_path": str(tmp_path / "test.db")}
-    reg: Registry = load_registry(config)
+    conn = load_registry(config)
 
     docid = "SJL-CLOUD-TEST-0001"
-    reg.upsert(
-        docid=docid,
-        canonical_filename="02000_2026-06-28__SJL-CLOUD-TEST-0001__test-doc__v1-0__abc12345.txt",
-        canonical_path=str(tmp_path / "02000_2026-06-28__SJL-CLOUD-TEST-0001__test-doc__v1-0__abc12345.txt"),
-        version="1-0",
-        sha256_full="a" * 64,
-        para="02000",
-        mirror_state="verified",
-        hook_id=None,
-        ocr_state=None,
-    )
+    record = {
+        "docid": docid,
+        "canonical_filename": "02000_2026-06-28__SJL-CLOUD-TEST-0001__test-doc__v1-0__abc12345.txt",
+        "canonical_path": str(tmp_path / "02000_2026-06-28__SJL-CLOUD-TEST-0001__test-doc__v1-0__abc12345.txt"),
+        "version": "1-0",
+        "prior_version": None,
+        "sha256_full": "a" * 64,
+        "sha256_8": "aaaaaaaa",
+        "para": "02000",
+        "semantic_title": "test-doc",
+        "mime_type": "text/plain",
+        "file_size": 0,
+        "date_ingested": "2026-06-28T00:00:00Z",
+        "date_modified": "2026-06-28T00:00:00Z",
+        "mirror_verified": 0,
+        "mirror_state": "verified",
+        "hook_id": None,
+        "ocr_state": "pending",
+        "vision_state": "pending",
+        "origin_device": None,
+    }
+    upsert(conn, record, config)
 
-    row = reg.find_by_docid(docid)
+    row = find_by_docid(conn, docid)
     assert row is not None
     assert row["docid"] == docid
     assert row["version"] == "1-0"
