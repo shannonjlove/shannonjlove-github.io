@@ -776,7 +776,10 @@ Completed / inactive since 2014–2023:
 | SJL Hub | `hub.shannonjlove.cloud` | Custom cluster management UI (see Part 10) |
 | n8n | shannonjlove.cloud | Automation platform; LLM nodes point to Ollama (not Claude API) |
 | Ollama | `shannonjlove.cloud:11434` | Self-hosted LLM server; replaces Claude/OpenAI API in all automations |
-| NeoFinder | Mac (licensed) | Disk cataloger; pre-seeds TagBot with embedded EXIF/ID3 metadata |
+| Immich | `photos.shannonjlove.cloud` | Self-hosted DAM; EXIF/GPS/face recognition; pre-seeds TagBot (Docker) |
+| ExifTool | `shannonjlove.cloud` (CLI) | Read/write all metadata fields; embed SJL XMP fields; create XMP sidecars |
+| Nominatim | `shannonjlove.cloud:8088` | Self-hosted OSM street-level reverse geocoding (Docker, opt-in) |
+| NeoFinder | RULED OUT | macOS-only, no Linux, no MCP, no WebTop path — replaced by Immich + ExifTool |
 | Paper Parrot | TBD | Document export destination |
 
 ---
@@ -795,6 +798,7 @@ Completed / inactive since 2014–2023:
 | Canonical cloud | Google Drive (sjlove@shannonjeffreylove.com) |
 | Link hub | Raindrop.io |
 | Cluster UI | SJL Hub at `hub.shannonjlove.cloud` (see Part 10) |
+| Photo/Video DAM | Immich at `photos.shannonjlove.cloud` (see Part 11) |
 | Automation | n8n at shannonjlove.cloud + HookVault webhooks |
 
 ---
@@ -1600,70 +1604,403 @@ Temperature:  0.3 (low — deterministic outputs for file naming)
 
 ---
 
-### NEOFINDER — MAC-SIDE PRE-PROCESSOR
+### NEOFINDER — STATUS: RULED OUT FOR THIS STACK
 
-NeoFinder (licensed) is a macOS disk cataloger that reads embedded metadata from
-every file it indexes — EXIF from photos, ID3/AAC tags from audio, video track info,
-PDF metadata, file stats. It catalogs files on disconnected drives, DVDs, and external
-storage. It runs on your Mac, not on the server.
+**NeoFinder is macOS/iOS only.** No Linux version exists. No MCP server exists.
+No WebTop/Docker/cloud deployment path. Its Windows counterpart is abeMeda
+(same database format) but that also doesn't run on Linux.
 
-**Role in SJL pipeline:** First-pass metadata extraction for files that originate
-on your Mac or local storage before they reach the server. Files with rich embedded
-metadata skip the heavyweight ML models entirely — TagBot just reads the pre-populated
-cache entry and moves on.
+Since the entire SJL stack runs in the cloud on `shannonjlove.cloud` (WebTop
+environment — everything in browser, nothing on a local desktop), NeoFinder
+cannot participate in the pipeline.
 
-**What NeoFinder reads automatically (no ML):**
+**Replaced by:**
+- **ExifTool** — server-side metadata engine (CLI + Python, Linux-native)
+- **Immich** — self-hosted Docker DAM with web UI, GPS maps, EXIF reading,
+  face recognition, and mobile upload (fills the catalog + browse role)
 
-| File type | Metadata extracted |
-|---|---|
-| Photos (JPG/HEIC/RAW) | Date taken, GPS coords, camera model, lens, aperture, ISO, shutter |
-| Audio (MP3/AAC/FLAC) | Artist, album, title, genre, BPM, year, track #, album art |
-| Video (MP4/MOV) | Duration, resolution, codec, frame rate, creation date |
-| PDF | Title, author, subject, keywords (if embedded), page count |
-| All files | Filename, size, created, modified, file type, path |
+See EXIF/GPS section below for the full replacement architecture.
 
-**Export format:** NeoFinder exports to tab-delimited text or can be queried via
-AppleScript. A small export script runs on your Mac and outputs `neofinder_export.json`
-which uploads to `shannonjlove.cloud/data/tagbot/prefill/`.
+---
 
-**TagBot integration — NeoFinder pre-seed:**
+### EXIF / GPS METADATA — FULL SPEC
+
+#### The Goal
+
+Every photo and video file in the SJL system must carry the full set of embedded
+metadata permanently — GPS coordinates reverse-geocoded to a human-readable address,
+all camera/equipment specs, date/time, and SJL-specific fields written into XMP
+namespace. This metadata must survive cloud uploads and be verifiable after storage.
+
+The address and equipment data feed directly into the SJL filename description
+and Raindrop tags. A file should never be named `IMG_4821.jpg` or even
+`2026-06-29_14-30_media-image_photo_UUID24.jpg` when it could be named
+`2026-06-29_14-30_media-image_austin-6th-street-iphone15pro_UUID24.jpg`.
+
+---
+
+#### EXIFTOOL — THE METADATA ENGINE
+
+ExifTool (Phil Harvey) is the universal standard for reading and writing metadata
+on any platform. It handles every format: EXIF, IPTC, XMP, GPS, MakerNotes
+(camera-manufacturer-specific fields), ID3, MP4 atoms, QuickTime, RIFF.
+
+```bash
+# Install on shannonjlove.cloud (Debian/Ubuntu)
+apt install libimage-exiftool-perl
+
+# Python wrapper
+pip install pyexiftool
+```
+
+**What ExifTool reads from a photo (full field set):**
+```
+CAMERA / EQUIPMENT
+  Make                   Apple
+  Model                  iPhone 15 Pro
+  LensModel              iPhone 15 Pro back triple camera 6.765mm f/1.78
+  FNumber                1.8
+  ISO                    800
+  ShutterSpeedValue      1/120 s
+  FocalLength            6.765 mm
+  FocalLengthIn35mmFormat 24 mm
+  ExposureMode           Auto
+  ExposureProgram        Program AE
+  MeteringMode           Multi-segment
+  WhiteBalance           Auto
+  Flash                  Off, Did not fire
+  ColorSpace             sRGB
+  BitsPerSample          8
+  SceneType              Directly photographed
+
+GPS / LOCATION
+  GPSLatitude            30.2672° N
+  GPSLongitude           97.7431° W
+  GPSAltitude            150 m Above Sea Level
+  GPSSpeed               0 km/h
+  GPSImgDirection        214.3° (compass bearing)
+  → Reverse geocoded:    "6th Street, Austin, Travis County, Texas, US"
+
+DATE / TIME
+  DateTimeOriginal       2026:06:29 14:30:22
+  OffsetTimeOriginal     -05:00
+  SubSecTimeOriginal     847
+
+IMAGE TECHNICAL
+  ImageWidth             4032
+  ImageHeight            3024
+  Orientation            Horizontal (normal)
+  XResolution            72 dpi
+  YResolution            72 dpi
+  ThumbnailLength        (embedded thumbnail size)
+
+SJL CUSTOM (written by TagBot into XMP namespace)
+  XMP:SJLuuid24          a1b2c3d4e5f6a1b2c3d4e5f6
+  XMP:SJLparabucket      projects
+  XMP:SJLcloud           gdrive
+  XMP:SJLproject         Our-Time
+  XMP:SJLprocessed       2026-06-29T19:45:00Z
+```
+
+**What ExifTool reads from a video (MP4/MOV):**
+```
+  CreateDate             2026:06:29 14:30:22
+  GPSCoordinates         30.2672 N, 97.7431 W (if shot on iPhone)
+  Make / Model           Apple / iPhone 15 Pro
+  VideoFrameRate         29.97
+  ImageWidth / Height    3840 / 2160 (4K)
+  Duration               0:02:34
+  VideoCodec             HEVC
+  AudioChannels          2
+  AudioSampleRate        44100 Hz
+  CompressorName         HEVC
+  HandlerDescription     Core Media Video
+```
+
+**Python read (TagBot integration):**
 ```python
-def _check_neofinder_cache(file_path: str) -> dict | None:
-    """Check if NeoFinder already cataloged this file (by filename + size hash)."""
-    nf_cache = load_neofinder_export("/data/tagbot/prefill/neofinder_export.json")
-    match = nf_cache.get(file_key(file_path))
-    if match and match.get("metadata_richness") > 0.6:
+import exiftool
+
+def read_full_exif(file_path: str) -> dict:
+    with exiftool.ExifToolHelper() as et:
+        metadata = et.get_metadata(file_path)[0]
+    return metadata
+
+def exif_richness_score(meta: dict) -> float:
+    """Score 0.0–1.0: how much usable metadata is already embedded."""
+    fields = ["EXIF:GPSLatitude", "EXIF:Make", "EXIF:Model",
+              "EXIF:DateTimeOriginal", "EXIF:FNumber", "EXIF:ISO"]
+    present = sum(1 for f in fields if meta.get(f))
+    return present / len(fields)
+```
+
+**Python write-back (embed SJL fields + write GPS if missing):**
+```python
+def write_sjl_metadata(file_path: str, uuid24: str, para: str,
+                        cloud: str, project: str, address: str):
+    with exiftool.ExifToolHelper() as et:
+        et.set_tags(file_path, {
+            "XMP:SJLuuid24":    uuid24,
+            "XMP:SJLparabucket": para,
+            "XMP:SJLcloud":     cloud,
+            "XMP:SJLproject":   project,
+            "XMP:SJLaddress":   address,
+            "XMP:SJLprocessed": datetime.utcnow().isoformat() + "Z",
+            "IPTC:Keywords":    f"sjl {cloud} {para} {project}",
+        })
+```
+
+---
+
+#### GPS REVERSE GEOCODING — SELF-HOSTED, ZERO API COST
+
+Two self-hosted options. Both run on `shannonjlove.cloud`. No Google Maps API.
+No Mapbox API. No per-lookup cost.
+
+**Option A — reverse_geocoder (Python library, fully offline)**
+```bash
+pip install reverse_geocoder
+```
+```python
+import reverse_geocoder as rg
+
+def gps_to_address(lat: float, lon: float) -> dict:
+    result = rg.search((lat, lon))[0]
+    # Returns: {'name': 'Austin', 'admin1': 'Texas', 'admin2': 'Travis County',
+    #           'cc': 'US'}
+    return result
+
+# SJL filename segment: "austin-travis-county-texas"
+def gps_to_slug(lat, lon) -> str:
+    r = gps_to_address(lat, lon)
+    return f"{r['name']}-{r['admin2']}-{r['admin1']}".lower().replace(" ", "-")
+```
+- Uses bundled GeoNames dataset (~50 MB, included in package)
+- Returns: city, county/admin2, state/admin1, country code
+- Speed: < 5ms per lookup (pure Python, in-memory dataset)
+- Limitation: city-level precision only — no street address
+
+**Option B — Nominatim self-hosted (street-level precision)**
+```bash
+docker run -d \
+  -e PBF_URL=https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf \
+  -e REPLICATION_URL=https://planet.openstreetmap.org/replication/hour/ \
+  -p 8088:8080 \
+  --name nominatim \
+  mediagis/nominatim:4.4
+```
+```python
+import requests
+
+def gps_to_street_address(lat: float, lon: float) -> str:
+    resp = requests.get(
+        "http://localhost:8088/reverse",
+        params={"lat": lat, "lon": lon, "format": "json", "zoom": 18},
+        timeout=2
+    )
+    data = resp.json()
+    addr = data.get("address", {})
+    # Returns street, house_number, suburb, city, state, postcode, country
+    road = addr.get("road", "")
+    city = addr.get("city") or addr.get("town") or addr.get("village", "")
+    state = addr.get("state", "")
+    return f"{road}-{city}-{state}".lower().replace(" ", "-")
+```
+- Full street-level address: "6th-street-austin-texas"
+- Requires ~50 GB disk for US data (or subset per state)
+- Initial import: 2–6 hours; then fast (< 20ms per lookup)
+- Updates: hourly replication from OSM (always current)
+- Limitation: disk space; Docker overhead; US-only if you only import US data
+
+**Recommended:** `reverse_geocoder` for city-level (always-on, zero overhead),
+Nominatim for street-level on specific project-sensitive files (opt-in per run).
+
+**GPS → SJL filename pipeline:**
+```
+EXIF GPS: 30.2672° N, 97.7431° W
+  → reverse_geocoder → "Austin, Travis County, Texas, US"
+  → slug: "austin-texas"
+  → SJL description: "austin-texas-outdoor-speaking"
+  → Full filename: 2026-06-29_14-30_media-image_austin-texas-outdoor-speaking_UUID24.jpg
+  → Tags: ["media", "image", "austin", "texas", "outdoor", "speaking", "iphone-15-pro"]
+```
+
+---
+
+#### METADATA PERSISTENCE — CLOUD STRIPPING BEHAVIOR
+
+Most clouds preserve EXIF on file storage but strip it on sharing or compression.
+The SJL strategy: write everything into the file AND into an XMP sidecar before
+any cloud upload. Verify after upload.
+
+| Service | Stores EXIF? | GPS preserved? | Strips on share? | Notes |
+|---|---|---|---|---|
+| Google Drive | YES | YES | NO (drive link) | Original file intact; thumbnail may strip |
+| Dropbox | YES | YES | NO | Full fidelity storage |
+| pCloud | YES | YES | NO | Full fidelity storage |
+| MEGA | YES | YES | NO | Full fidelity storage |
+| iCloud Drive | YES | YES | NO | Originals preserved |
+| MediaFire | PARTIAL | PARTIAL | YES | Recompresses images; may strip |
+| Google Photos | YES (original) | YES (original) | YES (shared link) | Shared URLs serve stripped version |
+| Any social share | NO | NO | YES | Always strips |
+
+**Strategy for MediaFire (compresses on upload):**
+- Store XMP sidecar alongside every media file on MediaFire
+- Sidecar filename: same as image, `.xmp` extension, SJL-named
+- Example: `2026-06-29_14-30_media-image_austin-texas_UUID24.xmp`
+- XMP file is plain XML — survives any compression
+- TagBot reads sidecar if main file's EXIF is stripped
+
+**XMP sidecar write (before upload):**
+```bash
+# ExifTool creates sidecar automatically
+exiftool -o %d%f.xmp -tagsfromfile @ -all:all photo.jpg
+```
+
+**Post-upload verification:**
+```python
+def verify_exif_survived(cloud_file_path: str, expected_uuid24: str) -> bool:
+    with exiftool.ExifToolHelper() as et:
+        meta = et.get_metadata(cloud_file_path)[0]
+    return meta.get("XMP:SJLuuid24") == expected_uuid24
+```
+If verification fails → re-embed via ExifTool → re-upload.
+
+---
+
+#### IMMICH — WEBTOP-NATIVE DAM (REPLACES NEOFINDER)
+
+Immich is a self-hosted photo and video library with a web UI, Docker deployment,
+mobile apps (iOS/Android for upload), face recognition, EXIF reading, GPS maps,
+and a REST API. It runs entirely on `shannonjlove.cloud`. No Mac desktop required.
+Accessible via browser in the WebTop environment.
+
+**Why Immich over PhotoPrism:**
+- More active development (larger team, faster releases as of 2026)
+- Better mobile upload app (iOS/Android — direct from phone to server)
+- REST API is more complete (easier to wire into HookVault/TagBot)
+- Face recognition and object detection built-in with own ML server
+- Fully open source, no paid tier
+
+**Docker deployment on shannonjlove.cloud:**
+```yaml
+# docker-compose.yml (immich)
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:release
+    ports: ["2283:2283"]
+    volumes:
+      - /data/immich/upload:/usr/src/app/upload
+      - /data/immich/config:/config
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOSTNAME: immich-redis
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    volumes:
+      - /data/immich/model-cache:/cache
+
+  immich-redis:
+    image: redis:6.2
+  immich-postgres:
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+```
+
+**Domain:** `photos.shannonjlove.cloud` (nginx reverse proxy to port 2283)
+
+**What Immich handles automatically (no TagBot needed):**
+- EXIF/GPS reading from every uploaded file
+- GPS reverse geocoding to city/country (built-in, uses OpenStreetMap)
+- Face detection and clustering (groups same person across library)
+- Object/scene detection (smart albums: "outdoor", "screenshot", "document")
+- Timeline view organized by date + location
+- Smart search: "photos in Austin in 2025" or "videos with people"
+- Duplicate detection
+
+**Immich REST API → TagBot integration:**
+```python
+# After Immich ingests a file, pull its extracted metadata back into TagBot
+import requests
+
+def get_immich_asset_metadata(asset_id: str) -> dict:
+    resp = requests.get(
+        f"http://localhost:2283/api/assets/{asset_id}",
+        headers={"x-api-key": IMMICH_API_KEY}
+    )
+    data = resp.json()
+    return {
+        "gps_lat":       data["exifInfo"]["latitude"],
+        "gps_lon":       data["exifInfo"]["longitude"],
+        "city":          data["exifInfo"]["city"],
+        "state":         data["exifInfo"]["state"],
+        "country":       data["exifInfo"]["country"],
+        "camera_make":   data["exifInfo"]["make"],
+        "camera_model":  data["exifInfo"]["model"],
+        "lens":          data["exifInfo"]["lensModel"],
+        "date_taken":    data["fileCreatedAt"],
+        "faces":         [f["person"]["name"] for f in data.get("faces", [])],
+        "description":   data.get("exifInfo", {}).get("description", ""),
+    }
+```
+
+**Updated TagBot pre-seed (Immich replaces NeoFinder):**
+```python
+def _check_immich_cache(file_hash: str) -> dict | None:
+    """If Immich already processed this file, pull its metadata — skip ML."""
+    asset = find_immich_asset_by_hash(file_hash)
+    if not asset:
+        return None
+    meta = get_immich_asset_metadata(asset["id"])
+    richness = sum(1 for v in meta.values() if v) / len(meta)
+    if richness > 0.6:
+        city_slug = f"{meta['city']}-{meta['state']}".lower().replace(" ", "-")
+        camera_slug = meta['camera_model'].lower().replace(" ", "-").replace("/", "-")
         return {
-            "suggested_description": match["derived_description"],
-            "tags": match["derived_tags"],
-            "source": "neofinder",
-            "skip_ml": True   # bypass CLIP/BLIP/YOLO entirely
+            "suggested_description": f"{city_slug}-{camera_slug}",
+            "tags": ["media", "image", meta["city"].lower(), meta["state"].lower(),
+                     meta["camera_make"].lower(), meta["camera_model"].lower()],
+            "source": "immich",
+            "skip_ml": True
         }
-    return None  # proceed to ML pipeline
+    return None
 ```
 
-**When NeoFinder pre-seed is sufficient (skip all ML):**
-- Photo with full EXIF (date, GPS, camera) → description from GPS + date, tags from camera metadata
-- Audio with complete ID3 tags → description from artist-title, tags from genre + year
-- Video with creation date + duration → basic description; still run Whisper for content tags
-
-**When NeoFinder is not sufficient (proceed to ML):**
-- Screenshot, downloaded image (no EXIF)
-- Video with no embedded metadata
-- Scanned PDF (no digital text)
-- Any file with sparse or missing embedded metadata
-
-**NeoFinder → SJL pipeline on Mac (Hazel automation):**
+**Immich → SJL pipeline flow:**
 ```
-Hazel watches ~/Downloads (or designated drop folder)
-  → file arrives
-  → Hazel triggers NeoFinder AppleScript: catalog this file
-  → NeoFinder reads metadata
-  → export script appends to neofinder_export.json
-  → rsync / Transmit uploads export to shannonjlove.cloud
-  → Hazel moves file to cloud @INBOX
-  → FileWarden picks it up on the server
-  → TagBot checks NeoFinder pre-seed first
+File arrives in /data/inbox
+  → FileWarden detects it
+  → Immich API: ingest file (or Immich watches same folder)
+  → Immich: reads EXIF + GPS + faces + objects
+  → TagBot: check Immich cache by file hash
+  → If rich metadata found: skip CLIP/BLIP/YOLO → use Immich data
+  → Apply SJL rename with GPS-derived description
+  → ExifTool: write SJL XMP fields into file
+  → Route to PARA folder
+  → HookVault fires to Raindrop + SJL Hub
+```
+
+---
+
+#### UPDATED RANK 1 (REPLACES NEOFINDER)
+
+**Rank 1 — Immich + ExifTool (WebTop-native, replaces NeoFinder)**
+```
+Cost:       $0 (self-hosted Docker)
+Speed:      EXIF read: <100ms | GPS geocode: <20ms | Full ML: async background
+RAM:        ~800 MB (Immich server + ML + Redis + Postgres)
+Platform:   Linux Docker — runs on shannonjlove.cloud, accessible in browser
+Advantage:  Everything NeoFinder did, but cloud-native and Linux-native
+            GPS reverse-geocoding built-in (city + country, OpenStreetMap)
+            Face recognition + smart albums out of the box
+            Mobile upload app: photos go from iPhone directly to server
+            REST API makes Immich data available to TagBot instantly
+            No Mac required, no desktop required, no local install
+Drawback:   Needs ~50 GB storage per 50K photos (plan accordingly)
+            Initial face recognition training takes time on first run
+            ML server (machine learning container) adds RAM overhead
+Decision:   ALWAYS run. Immich is the DAM layer; ExifTool is the write layer.
+            Together they replace NeoFinder completely and exceed its capabilities.
 ```
 
 ---
