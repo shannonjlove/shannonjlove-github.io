@@ -776,7 +776,8 @@ Completed / inactive since 2014–2023:
 | SJL Hub | `hub.shannonjlove.cloud` | Custom cluster management UI (see Part 10) |
 | n8n | shannonjlove.cloud | Automation platform; LLM nodes point to Ollama (not Claude API) |
 | Ollama | `shannonjlove.cloud:11434` | Self-hosted LLM server; replaces Claude/OpenAI API in all automations |
-| Immich | `photos.shannonjlove.cloud` | Self-hosted DAM; EXIF/GPS/face recognition; pre-seeds TagBot (Docker) |
+| PhotoPrism | `photos.shannonjlove.cloud` | Primary DAM; full EXIF/XMP/IPTC/GPS; YAML sidecars; pre-seeds TagBot (Docker) |
+| Immich | Alt DAM | Secondary option — better mobile upload app; less metadata depth than PhotoPrism |
 | ExifTool | `shannonjlove.cloud` (CLI) | Read/write all metadata fields; embed SJL XMP fields; create XMP sidecars |
 | Nominatim | `shannonjlove.cloud:8088` | Self-hosted OSM street-level reverse geocoding (Docker, opt-in) |
 | NeoFinder | RULED OUT | macOS-only, no Linux, no MCP, no WebTop path — replaced by Immich + ExifTool |
@@ -798,7 +799,7 @@ Completed / inactive since 2014–2023:
 | Canonical cloud | Google Drive (sjlove@shannonjeffreylove.com) |
 | Link hub | Raindrop.io |
 | Cluster UI | SJL Hub at `hub.shannonjlove.cloud` (see Part 10) |
-| Photo/Video DAM | Immich at `photos.shannonjlove.cloud` (see Part 11) |
+| Photo/Video DAM | PhotoPrism at `photos.shannonjlove.cloud` (see Part 11) |
 | Automation | n8n at shannonjlove.cloud + HookVault webhooks |
 
 ---
@@ -1868,139 +1869,250 @@ If verification fails → re-embed via ExifTool → re-upload.
 
 ---
 
-#### IMMICH — WEBTOP-NATIVE DAM (REPLACES NEOFINDER)
+#### PHOTOPRISM vs IMMICH — HEAD-TO-HEAD ON METADATA
 
-Immich is a self-hosted photo and video library with a web UI, Docker deployment,
-mobile apps (iOS/Android for upload), face recognition, EXIF reading, GPS maps,
-and a REST API. It runs entirely on `shannonjlove.cloud`. No Mac desktop required.
-Accessible via browser in the WebTop environment.
+The person who told you PhotoPrism is more granular on metadata is correct.
+Here is the verified difference:
 
-**Why Immich over PhotoPrism:**
-- More active development (larger team, faster releases as of 2026)
-- Better mobile upload app (iOS/Android — direct from phone to server)
-- REST API is more complete (easier to wire into HookVault/TagBot)
-- Face recognition and object detection built-in with own ML server
-- Fully open source, no paid tier
+| Factor | PhotoPrism | Immich |
+|---|---|---|
+| **Metadata read depth** | **Deeper** — EXIF + XMP + IPTC + Google Photos JSON + YAML sidecars + ExifTool integration built-in | Good — EXIF + GPS + Google Takeout JSON |
+| **ExifTool integration** | **Built-in** — uses ExifTool internally for full field extraction | Not built-in |
+| **XMP sidecar reading** | **Yes** — reads standalone .xmp files automatically | Limited |
+| **YAML sidecar output** | **Yes** — creates human-readable YAML alongside each file | No |
+| **Metadata as search primitive** | **Every field** is indexed and searchable/filterable | Basic fields only |
+| **Bulk metadata editing** | **Better** — fix wrong dates/geotags across hundreds of files at once | Minimal editing |
+| **GPS / world map** | **Interactive map view** (Plus tier, $25/yr) | Yes (free) |
+| **Face recognition** | Yes (community edition) | Yes (free) |
+| **Write metadata back to originals** | **No (intentional)** — avoids data loss/conflicts | No |
+| **Mobile upload app** | Web upload + PhotoSync compatible | **Better** — native iOS/Android app |
+| **REST API completeness** | Good | **More complete** |
+| **Cost** | Free CE + $25/yr Plus for maps/vector search | **100% free** |
+| **Development pace** | Stable, mature | Faster (larger team, 2024–2026) |
+| **RAW file support** | **Better** — more RAW formats, more metadata from RAW | Good |
+| **IPTC fields** | **Yes** — Title, Description, Artist, Keywords, Copyright | Partial |
+| **Lens metadata** | **Full** — focal length, aperture, lens model, 35mm equivalent | Basic |
+
+**Critical finding:** Neither PhotoPrism nor Immich writes changed metadata
+back to the original files. **ExifTool remains essential for all write-back**
+regardless of which DAM is chosen. The two roles are cleanly separated:
+- DAM (PhotoPrism or Immich): **reads** and organizes
+- ExifTool: **writes** SJL XMP fields, GPS, IPTC back into the file permanently
+
+---
+
+#### PHOTOPRISM — PRIMARY DAM (RECOMMENDED) ✦
+
+PhotoPrism is the right choice for the SJL system because metadata granularity
+is the primary requirement — every EXIF field needs to be readable, searchable,
+and available to TagBot for SJL filename generation and Raindrop tagging.
+
+**Editions:**
+- **Community Edition (CE):** Free, AGPL, full core functionality, Docker
+- **Plus (~$25/year):** Interactive world maps, vector search, advanced filters
+  → Worth it. GPS world map + vector search directly serve the SJL use case.
 
 **Docker deployment on shannonjlove.cloud:**
 ```yaml
-# docker-compose.yml (immich)
+# docker-compose.yml (PhotoPrism)
 services:
-  immich-server:
-    image: ghcr.io/immich-app/immich-server:release
-    ports: ["2283:2283"]
-    volumes:
-      - /data/immich/upload:/usr/src/app/upload
-      - /data/immich/config:/config
+  photoprism:
+    image: photoprism/photoprism:latest
+    ports: ["2342:2342"]
     environment:
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOSTNAME: immich-redis
-
-  immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:release
+      PHOTOPRISM_ADMIN_PASSWORD: "${PHOTOPRISM_ADMIN_PASSWORD}"
+      PHOTOPRISM_SITE_URL: "https://photos.shannonjlove.cloud/"
+      PHOTOPRISM_ORIGINALS_LIMIT: 5000     # MB per file, -1 for unlimited
+      PHOTOPRISM_HTTP_COMPRESSION: "gzip"
+      PHOTOPRISM_LOG_LEVEL: "info"
+      PHOTOPRISM_READONLY: "false"
+      PHOTOPRISM_EXPERIMENTAL: "false"
+      PHOTOPRISM_DISABLE_CHOWN: "false"
+      PHOTOPRISM_DISABLE_BACKUPS: "false"
+      PHOTOPRISM_DISABLE_EXIFTOOL: "false"  # KEEP ENABLED — uses ExifTool
+      PHOTOPRISM_DISABLE_FACES: "false"
+      PHOTOPRISM_DISABLE_CLASSIFICATION: "false"
+      PHOTOPRISM_FFMPEG_ENCODER: "software"
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"
+      PHOTOPRISM_DATABASE_SERVER: "mariadb:3306"
+      PHOTOPRISM_DATABASE_NAME: "photoprism"
+      PHOTOPRISM_DATABASE_USER: "photoprism"
+      PHOTOPRISM_DATABASE_PASSWORD: "${MARIADB_PASSWORD}"
     volumes:
-      - /data/immich/model-cache:/cache
+      - /data/photoprism/originals:/photoprism/originals  # SJL @PROJECTS/AREAS/RESOURCES media
+      - /data/photoprism/storage:/photoprism/storage      # cache, sidecars, thumbnails
+      - /data/inbox:/photoprism/import                    # @INBOX_sjlcloud maps here
 
-  immich-redis:
-    image: redis:6.2
-  immich-postgres:
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD}"
+      MARIADB_DATABASE: "photoprism"
+      MARIADB_USER: "photoprism"
+      MARIADB_PASSWORD: "${MARIADB_PASSWORD}"
+    volumes:
+      - /data/photoprism/db:/var/lib/mysql
 ```
 
-**Domain:** `photos.shannonjlove.cloud` (nginx reverse proxy to port 2283)
+**Domain:** `photos.shannonjlove.cloud` (nginx → port 2342)
 
-**What Immich handles automatically (no TagBot needed):**
-- EXIF/GPS reading from every uploaded file
-- GPS reverse geocoding to city/country (built-in, uses OpenStreetMap)
-- Face detection and clustering (groups same person across library)
-- Object/scene detection (smart albums: "outdoor", "screenshot", "document")
-- Timeline view organized by date + location
-- Smart search: "photos in Austin in 2025" or "videos with people"
+**What PhotoPrism handles automatically:**
+- Full EXIF extraction (via built-in ExifTool) — every field
+- XMP sidecar reading — standalone `.xmp` files auto-detected
+- GPS reverse geocoding → city, state, country (OpenStreetMap)
+- Interactive world map (Plus): navigate library by location
+- Human-readable YAML sidecar files — one per media file, editable
+- Face detection and clustering
+- Object/scene classification (TensorFlow models)
+- RAW file support: CR2, CR3, ARW, NEF, DNG, HEIC, and more
 - Duplicate detection
+- Timeline by date + location
 
-**Immich REST API → TagBot integration:**
+**PhotoPrism YAML sidecar — what it looks like:**
+```yaml
+# /photoprism/storage/sidecar/2026-06-29/IMG_4821.yml
+TakenAt: "2026-06-29T14:30:22Z"
+TakenAtLocal: "2026-06-29T09:30:22"
+TimeZone: "America/Chicago"
+Title: "Austin 6th Street"
+Description: ""
+Keywords: "austin, texas, outdoor, speaking"
+Notes: ""
+Subject: ""
+Artist: ""
+Latitude: 30.2672
+Longitude: -97.7431
+Altitude: 150
+Country: "us"
+City: "Austin"
+State: "Texas"
+Camera: "Apple iPhone 15 Pro"
+Lens: "iPhone 15 Pro back triple camera 6.765mm f/1.78"
+FocalLength: 6
+FNumber: 1.8
+ISO: 800
+Exposure: "1/120"
+Quality: 3
+Scan: false
+Panorama: false
+Private: false
+```
+This YAML file is the TagBot pre-seed source — richer than any API response.
+
+**PhotoPrism REST API → TagBot integration:**
 ```python
-# After Immich ingests a file, pull its extracted metadata back into TagBot
 import requests
 
-def get_immich_asset_metadata(asset_id: str) -> dict:
+PHOTOPRISM_URL = "http://localhost:2342"
+PHOTOPRISM_TOKEN = ""  # set after login
+
+def photoprism_login():
+    resp = requests.post(f"{PHOTOPRISM_URL}/api/v1/session",
+                         json={"username": "admin", "password": ADMIN_PASSWORD})
+    global PHOTOPRISM_TOKEN
+    PHOTOPRISM_TOKEN = resp.json()["id"]
+
+def get_photoprism_photo(file_hash: str) -> dict | None:
     resp = requests.get(
-        f"http://localhost:2283/api/assets/{asset_id}",
-        headers={"x-api-key": IMMICH_API_KEY}
+        f"{PHOTOPRISM_URL}/api/v1/photos",
+        params={"q": f"hash:{file_hash}", "count": 1},
+        headers={"X-Auth-Token": PHOTOPRISM_TOKEN}
     )
-    data = resp.json()
+    results = resp.json()
+    return results[0] if results else None
+
+def photoprism_to_tagbot_seed(photo: dict) -> dict:
+    city  = photo.get("City", "")
+    state = photo.get("State", "")
+    cam   = photo.get("CameraModel", "").lower().replace(" ", "-")
+    geo_slug = f"{city}-{state}".lower().replace(" ", "-") if city else ""
+    desc = f"{geo_slug}-{cam}" if geo_slug else cam
+
     return {
-        "gps_lat":       data["exifInfo"]["latitude"],
-        "gps_lon":       data["exifInfo"]["longitude"],
-        "city":          data["exifInfo"]["city"],
-        "state":         data["exifInfo"]["state"],
-        "country":       data["exifInfo"]["country"],
-        "camera_make":   data["exifInfo"]["make"],
-        "camera_model":  data["exifInfo"]["model"],
-        "lens":          data["exifInfo"]["lensModel"],
-        "date_taken":    data["fileCreatedAt"],
-        "faces":         [f["person"]["name"] for f in data.get("faces", [])],
-        "description":   data.get("exifInfo", {}).get("description", ""),
+        "suggested_description": desc[:40],   # SJL 40-char limit
+        "tags": list(filter(None, [
+            "media", "image",
+            city.lower() if city else None,
+            state.lower() if state else None,
+            photo.get("CameraMake", "").lower() or None,
+            cam or None,
+        ])) + photo.get("Keywords", "").split(", "),
+        "gps_lat":    photo.get("Lat"),
+        "gps_lon":    photo.get("Lng"),
+        "date_taken": photo.get("TakenAt"),
+        "faces":      [f["Name"] for f in photo.get("Faces", [])],
+        "source":     "photoprism",
+        "skip_ml":    True   # rich metadata → bypass CLIP/BLIP/YOLO
     }
 ```
 
-**Updated TagBot pre-seed (Immich replaces NeoFinder):**
-```python
-def _check_immich_cache(file_hash: str) -> dict | None:
-    """If Immich already processed this file, pull its metadata — skip ML."""
-    asset = find_immich_asset_by_hash(file_hash)
-    if not asset:
-        return None
-    meta = get_immich_asset_metadata(asset["id"])
-    richness = sum(1 for v in meta.values() if v) / len(meta)
-    if richness > 0.6:
-        city_slug = f"{meta['city']}-{meta['state']}".lower().replace(" ", "-")
-        camera_slug = meta['camera_model'].lower().replace(" ", "-").replace("/", "-")
-        return {
-            "suggested_description": f"{city_slug}-{camera_slug}",
-            "tags": ["media", "image", meta["city"].lower(), meta["state"].lower(),
-                     meta["camera_make"].lower(), meta["camera_model"].lower()],
-            "source": "immich",
-            "skip_ml": True
-        }
-    return None
+**PhotoPrism → SJL pipeline flow:**
 ```
-
-**Immich → SJL pipeline flow:**
-```
-File arrives in /data/inbox
-  → FileWarden detects it
-  → Immich API: ingest file (or Immich watches same folder)
-  → Immich: reads EXIF + GPS + faces + objects
-  → TagBot: check Immich cache by file hash
-  → If rich metadata found: skip CLIP/BLIP/YOLO → use Immich data
-  → Apply SJL rename with GPS-derived description
-  → ExifTool: write SJL XMP fields into file
+File arrives in /data/inbox (= /photoprism/import)
+  → PhotoPrism auto-imports: reads full EXIF + XMP + GPS
+  → PhotoPrism writes YAML sidecar to /photoprism/storage/sidecar/
+  → FileWarden detects file in originals (post-import)
+  → TagBot: query PhotoPrism API by file hash → get pre-seed
+  → If pre-seed richness > 0.6: skip CLIP/BLIP/YOLO entirely
+  → Build SJL description from city + camera + keywords
+  → ExifTool: write SJL XMP fields into original file
+  → ExifTool: write XMP sidecar alongside original
+  → Apply SJL rename (UUID24 stays as permanent identity)
   → Route to PARA folder
   → HookVault fires to Raindrop + SJL Hub
 ```
 
 ---
 
+#### IMMICH — SECONDARY OPTION (MOBILE-FIRST USE CASE)
+
+Immich remains the better choice **only if** mobile upload convenience is the
+top priority and metadata granularity is secondary. Its native iOS/Android app
+is more seamless than PhotoPrism's mobile upload experience.
+
+**When to choose Immich instead of PhotoPrism:**
+- You primarily upload from iPhone and want background auto-backup
+- You need 100% free (no $25/year Plus)
+- REST API completeness matters more than metadata depth
+- You don't need IPTC, XMP sidecar reading, or YAML sidecars
+
+**When to run BOTH (advanced setup):**
+- PhotoPrism: metadata master, search, catalog, GPS map
+- Immich: mobile upload receiver → auto-sync originals to PhotoPrism's originals folder
+- Result: iPhone photos go to Immich (easy upload) → Immich writes to shared volume
+  → PhotoPrism indexes from same folder → both have the library
+- Overhead: two Docker stacks; more RAM; more complexity
+- Only worth it if mobile background upload is a hard requirement
+
+**Recommendation for SJL:** Single-DAM setup with PhotoPrism.
+Use PhotoSync app (iOS, one-time purchase ~$4) for mobile upload to PhotoPrism
+if background auto-backup from iPhone is needed.
+
+---
+
 #### UPDATED RANK 1 (REPLACES NEOFINDER)
 
-**Rank 1 — Immich + ExifTool (WebTop-native, replaces NeoFinder)**
+**Rank 1 — PhotoPrism + ExifTool (WebTop-native, replaces NeoFinder)**
 ```
-Cost:       $0 (self-hosted Docker)
-Speed:      EXIF read: <100ms | GPS geocode: <20ms | Full ML: async background
-RAM:        ~800 MB (Immich server + ML + Redis + Postgres)
-Platform:   Linux Docker — runs on shannonjlove.cloud, accessible in browser
-Advantage:  Everything NeoFinder did, but cloud-native and Linux-native
-            GPS reverse-geocoding built-in (city + country, OpenStreetMap)
-            Face recognition + smart albums out of the box
-            Mobile upload app: photos go from iPhone directly to server
-            REST API makes Immich data available to TagBot instantly
-            No Mac required, no desktop required, no local install
-Drawback:   Needs ~50 GB storage per 50K photos (plan accordingly)
-            Initial face recognition training takes time on first run
-            ML server (machine learning container) adds RAM overhead
-Decision:   ALWAYS run. Immich is the DAM layer; ExifTool is the write layer.
-            Together they replace NeoFinder completely and exceed its capabilities.
+Cost:       $0 CE / $25/yr Plus (maps + vector search — worth it)
+Speed:      EXIF read: <100ms | GPS geocode: built-in | YAML sidecar: instant
+RAM:        ~600 MB (PhotoPrism + MariaDB)
+Platform:   Linux Docker — runs on shannonjlove.cloud, browser accessible
+Advantage:  Most granular metadata reading of any self-hosted DAM
+            Uses ExifTool internally — every EXIF/XMP/IPTC field extracted
+            YAML sidecar per file = human-readable TagBot pre-seed
+            GPS world map (Plus) = visual location browse across all media
+            RAW support — CR2/CR3/ARW/NEF/DNG/HEIC all indexed
+            IPTC fields: Title, Artist, Keywords, Copyright — SJL-relevant
+            Full lens/equipment metadata — focal length, aperture, ISO
+            Neither writes to originals → ExifTool owns write-back cleanly
+Drawback:   $25/yr Plus for maps (free CE has no map view)
+            Mobile upload less seamless than Immich (use PhotoSync app)
+            MariaDB dependency (slightly heavier than Immich's Postgres setup)
+            Face recognition training is slow on first large library import
+Decision:   PhotoPrism is the DAM. ExifTool is the write engine.
+            These two roles are permanently separated and complementary.
+            Immich remains viable if mobile-first upload is a hard requirement.
 ```
 
 ---
