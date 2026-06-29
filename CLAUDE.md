@@ -657,7 +657,7 @@ Account: `sjlove@shannonjeffreylove.com`
 |---|---|
 | `Austin apartment` | `Austin-Apartment_PROJECTS_gDrive` |
 | `Revelation 911` | `Revelation-911_PROJECTS_gDrive` |
-| `TGMGPYSM` | `TGMGPYSM_PROJECTS_gDrive` *(clarify full name)* |
+| `TGMGPYSM` | `Gay-Mans-Guide-Pleasing-Straight-Man_PROJECTS_gDrive` |
 | `Asha 2026 bday` | `Asha-2026-Birthday_PROJECTS_gDrive` |
 | `SJL Personal Server Cloud Project` | `SJL-Personal-Server_PROJECTS_gDrive` |
 | `Built For This_gDrive` | `Built-For-This_PROJECTS_gDrive` |
@@ -713,7 +713,7 @@ Completed / inactive since 2014–2023:
 
 - [x] `Our Time` — **RESOLVED:** single feature film project; `Our-Time_PROJECTS_gDrive` is parent; Promo and Pitch Deck are subfolders
 - [x] Dropbox account 2 — **RESOLVED:** label is `Dropbox-biz`
-- [ ] `TGMGPYSM` — what is the full project name?
+- [x] `TGMGPYSM` — **RESOLVED:** *The Gay Man's Guide to Pleasing Your Straight Man* by Shannon J. Love & Rachael Figueroa. Rename → `Gay-Mans-Guide-Pleasing-Straight-Man_PROJECTS_gDrive`
 
 ---
 
