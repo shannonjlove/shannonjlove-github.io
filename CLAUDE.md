@@ -780,8 +780,12 @@ Completed / inactive since 2014–2023:
 | Immich | Alt DAM | Secondary option — better mobile upload app; less metadata depth than PhotoPrism |
 | ExifTool | `shannonjlove.cloud` (CLI) | Read/write all metadata fields; embed SJL XMP fields; create XMP sidecars |
 | Nominatim | `shannonjlove.cloud:8088` | Self-hosted OSM street-level reverse geocoding (Docker, opt-in) |
-| NeoFinder | RULED OUT | macOS-only, no Linux, no MCP, no WebTop path — replaced by Immich + ExifTool |
-| Paper Parrot | TBD | Document export destination |
+| NeoFinder | RULED OUT | macOS-only, no Linux, no MCP, no WebTop path — replaced by PhotoPrism + ExifTool |
+| Paperless-ngx | `docs.shannonjlove.cloud` | Document DAM: PDFs, scans, invoices, contracts — OCR + AI tagging (Docker) |
+| paperless-gpt | Sidecar to paperless-ngx | LLM vision OCR via Ollama — handles watermarks, sideways text, difficult scans |
+| DEVONthink Server | Mac-hosted (lifetime license) | Knowledge management + MCP server (4.3) — browser access from WebTop; Mac required |
+| PhotoSync | iOS app (owned) | Mobile photo upload to PhotoPrism from iPhone |
+| Paper Parrot | UNRESOLVED | Cannot find this product — needs URL/clarification from SJL |
 
 ---
 
@@ -800,6 +804,8 @@ Completed / inactive since 2014–2023:
 | Link hub | Raindrop.io |
 | Cluster UI | SJL Hub at `hub.shannonjlove.cloud` (see Part 10) |
 | Photo/Video DAM | PhotoPrism at `photos.shannonjlove.cloud` (see Part 11) |
+| Document DAM | Paperless-ngx at `docs.shannonjlove.cloud` (see Part 12) |
+| Knowledge layer | DEVONthink Server (Mac-hosted, lifetime license, MCP server) (see Part 12) |
 | Automation | n8n at shannonjlove.cloud + HookVault webhooks |
 
 ---
@@ -2410,3 +2416,346 @@ Recommended server RAM:                                            16 GB
 If current server has < 16 GB: run Ollama on-demand (start/stop per job) rather
 than always-on, and defer BLIP-base to batch mode only. Minimum viable is 8 GB
 running CLIP + YOLO + Whisper + KeyBERT only (~3 GB model RAM).
+
+---
+
+## PART 12 — DOCUMENT INTELLIGENCE LAYER
+
+### Overview
+
+PhotoPrism handles photos and video. A separate document intelligence layer handles
+PDFs, scans, invoices, contracts, scripts, correspondence, and research. Three tools
+were evaluated for this role: Paperless-ngx, DEVONthink Server, and Paper Parrot.
+
+---
+
+### PAPER PARROT — STATUS: UNRESOLVED
+
+No product called "Paper Parrot" appears in any search index as of June 2026.
+No results for document management, image recognition, or file processing under
+this name. This may be:
+- A tool known under a different name
+- A very niche or private product not widely indexed
+- A product name remembered slightly differently
+
+**Action required:** Provide a URL or the exact product name so it can be evaluated.
+Until resolved, "Paper Parrot" remains a placeholder in the tools list.
+
+---
+
+### PAPERLESS-NGX — RECOMMENDED: DOCUMENT DAM ✦
+
+Paperless-ngx is a self-hosted, Docker-native document management system for PDFs,
+scans, invoices, contracts, and any text-bearing document. It is the document-layer
+complement to PhotoPrism: PhotoPrism owns media files, Paperless-ngx owns documents.
+
+**Platform:** Linux Docker — fully WebTop-accessible via browser. Zero Mac dependency.
+**Domain:** `docs.shannonjlove.cloud`
+**Cost:** $0 (fully open source, MIT-licensed)
+
+**Native capabilities:**
+- Tesseract OCR on every ingested document (100+ languages)
+- ML-based auto-tagging: neural network classifier assigns tags, correspondents,
+  document types, and storage paths automatically based on document content
+- Full-text search across all ingested documents
+- Correspondent tracking (who sent what document)
+- Document type classification (invoice, contract, receipt, letter, etc.)
+- Date parsing from document content
+- Storage path automation (files auto-organized on disk by rules)
+
+**With paperless-gpt (Ollama integration — zero API cost):**
+```
+paperless-gpt is a companion container that runs alongside paperless-ngx.
+It intercepts documents after OCR and calls Ollama for:
+- LLM vision OCR: re-OCRs difficult docs (watermarks, sideways text, poor scans)
+  using a vision-capable model — dramatically more accurate than Tesseract alone
+- AI title generation: "Invoice from AT&T — June 2026" instead of "scan_003"
+- AI tag suggestion: calls Ollama with document text → returns relevant tags
+- AI correspondent detection: infers who the document is from/to
+```
+
+**Docker compose:**
+```yaml
+services:
+  paperless-ngx:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    ports: ["8000:8000"]
+    volumes:
+      - /data/paperless/data:/usr/src/paperless/data
+      - /data/paperless/media:/usr/src/paperless/media
+      - /data/paperless/export:/usr/src/paperless/export
+      - /data/inbox/documents:/usr/src/paperless/consume   # @INBOX_sjlcloud/docs
+    environment:
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_TIKA_ENABLED: 1           # better DOCX/XLSX parsing
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+      PAPERLESS_URL: https://docs.shannonjlove.cloud
+      PAPERLESS_SECRET_KEY: "${PAPERLESS_SECRET_KEY}"
+      PAPERLESS_CONSUMER_POLLING: 60      # check consume folder every 60s
+      PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
+
+  paperless-gpt:                          # Ollama-powered AI companion
+    image: icereed/paperless-gpt:latest
+    environment:
+      PAPERLESS_BASE_URL: http://paperless-ngx:8000
+      PAPERLESS_API_TOKEN: "${PAPERLESS_API_TOKEN}"
+      LLM_PROVIDER: ollama
+      OLLAMA_HOST: http://host.docker.internal:11434  # Ollama on host
+      LLM_MODEL: mistral:7b
+      VISION_LLM_MODEL: llava:7b          # for vision OCR (when GPU added)
+      AUTO_TAG_ENABLED: "true"
+      AUTO_TITLE_ENABLED: "true"
+      AUTO_CORRESPONDENT_ENABLED: "true"
+
+  paperless-redis:
+    image: redis:7
+  paperless-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: "${PAPERLESS_DB_PASSWORD}"
+    volumes:
+      - /data/paperless/pgdata:/var/lib/postgresql/data
+
+  gotenberg:                              # PDF generation/conversion
+    image: gotenberg/gotenberg:8
+  tika:                                   # DOCX/XLSX/PPTX parsing
+    image: apache/tika:latest
+```
+
+**SJL pipeline integration:**
+```
+Document arrives in /data/inbox/documents/ (= Paperless consume folder)
+  → Paperless-ngx: Tesseract OCR + ML auto-tag
+  → paperless-gpt: Ollama mistral:7b refines title, tags, correspondent
+  → Document stored in Paperless with full-text search index
+  → Paperless REST API: TagBot queries by filename hash → gets title/tags
+  → TagBot builds SJL description from Paperless title + document type
+  → ExifTool: embeds SJL XMP fields into PDF metadata
+  → FileWarden: applies SJL rename + routes to PARA folder
+  → HookVault fires to Raindrop + SJL Hub
+```
+
+**What Paperless-ngx owns in SJL taxonomy:**
+```
+document-pdf        → all PDFs (scanned or digital)
+document-text       → TXT, MD, RTF
+document-spreadsheet → XLSX, CSV (via Tika)
+document-presentation → PPTX (via Tika)
+document-form       → filled forms, applications
+finance-receipt     → receipts, expenses
+finance-invoice     → invoices, bills
+finance-statement   → bank/account statements
+legal-contract      → agreements, contracts
+legal-filing        → court filings, official docs
+legal-correspondence → legal letters
+personal-id         → ID documents, passports
+personal-health     → medical records
+personal-correspondence → personal letters/emails
+```
+
+**RAM budget addition:**
+```
+Paperless-ngx + Redis + Postgres:  ~400 MB
+paperless-gpt (companion):         ~100 MB
+Tika + Gotenberg:                  ~300 MB
+──────────────────────────────────────────
+Paperless stack total:             ~800 MB
+```
+Updated total server RAM requirement: 16 GB + 800 MB → still within 16 GB envelope
+if Paperless-ngx processes documents in off-peak hours (not simultaneously with
+full TagBot + Ollama load).
+
+---
+
+### DEVONTHINK SERVER 4.3 — MAC-HOSTED, MCP-ENABLED
+
+**Platform:** macOS only. No Linux version. No Docker. No WebTop deployment.
+**Linux counterpart:** Does not exist as an equivalent.
+The closest Linux alternatives (Obsidian, Joplin, Trilium, Paperwork) are
+note-taking apps that do not replicate DEVONthink's AI document intelligence —
+its automated filing, semantic see-also suggestions, and cross-document
+classification engine have no true Linux equivalent.
+
+**Status in SJL system:** Viable as a specialized knowledge management layer,
+but requires a Mac running somewhere. Not suitable for the fully automated
+document pipeline (that role goes to Paperless-ngx).
+
+#### What DEVONthink Server Does Well
+
+- AI-assisted filing: drops a document into the most relevant group automatically
+- Semantic search: "find documents conceptually related to this one"
+- See Also & Classify: surfaces related documents across the entire database
+- AI summarization and annotation
+- Handles: PDFs, RTF, Markdown, HTML, email archives, bookmarks, images, Office docs
+- ABBYY-powered OCR (separate license) or built-in OCR
+- Encrypted databases, version history, replication
+
+#### DEVONthink 4.3 MCP Server (May 2026) — KEY FEATURE
+
+DEVONthink 4.3 shipped a built-in MCP server with ~60 commands. This is a
+**bridge from DEVONthink databases to any MCP-compatible AI client** — including
+Claude Code sessions and n8n MCP nodes.
+
+```
+MCP commands include:
+  - Read and summarize records
+  - Search databases (semantic + full-text)
+  - Create and update documents
+  - Move items between groups
+  - Add tags and annotations
+  - Query metadata and classify documents
+
+Privacy controls:
+  - Redacts personal data (credit cards, email addresses) before leaving machine
+  - Per-database AI exclusion (encrypted DBs auto-excluded)
+  - Local-only mode: MCP server accessible only on LAN (no internet exposure)
+
+Setup:
+  DEVONthink Settings → AI → MCP
+  Enable for: Anthropic Claude / OpenAI Codex / Hermes Agent
+```
+
+**This means Claude Code can directly query DEVONthink databases from a session.**
+In this session right now, if DEVONthink Server is running on a Mac with MCP enabled,
+a tool call to the DEVONthink MCP server could search, retrieve, tag, or file
+documents without leaving the Claude Code interface.
+
+#### DEVONthink Web Server — WebTop Access
+
+DEVONthink Server's built-in web server provides browser-based access to all databases.
+SSL/TLS encrypted. Accessible from any browser — including in a Linux WebTop session.
+
+```
+URL: https://[mac-local-ip-or-hostname]:8080
+Or via VPN + domain: https://devonthink.shannonjlove.cloud (nginx tunnel to Mac)
+Access: full document library, search, view, create, move from browser
+```
+
+#### How to Make It WebTop-Accessible Without a Desktop Mac
+
+**Option A — Mac mini as always-on home server (recommended)**
+```
+Hardware: Mac mini M2 (~$500-600 used) or existing Mac mini
+Location: Home network, always-on
+Access: VPN or Tailscale → access DEVONthink web server from anywhere
+DEVONthink web URL tunneled via nginx on shannonjlove.cloud:
+  https://devonthink.shannonjlove.cloud → proxy → Mac mini:8080
+MCP server: accessible on LAN or via VPN to n8n + Claude Code
+Cost: one-time hardware; existing lifetime DEVONthink license
+```
+
+**Option B — Hosted Mac (MacStadium, AWS Mac, Scaleway Mac)**
+```
+Cost: ~$25-40/month for a hosted Mac mini in the cloud
+Advantage: truly cloud-hosted, no home hardware
+Drawback: ongoing cost; overkill for this one service
+Decision: only if no Mac hardware is available at home
+```
+
+**Option C — Accept Mac-desktop-only scope**
+```
+Run DEVONthink on your primary Mac when you're at it.
+Use it for knowledge management and research: import, AI-file, annotate.
+Export processed documents to SJL pipeline manually or via Hazel.
+MCP server available during Mac sessions → Claude Code can query.
+Not automated 24/7 but leverages the lifetime license without hardware investment.
+```
+
+#### SJL Role Division: DEVONthink vs Paperless-ngx
+
+These two tools do not compete — they serve different documents at different
+levels of the pipeline:
+
+| Document type | Goes to | Why |
+|---|---|---|
+| Invoices, receipts, bills | Paperless-ngx | Auto-OCR, auto-tag, automated pipeline |
+| Bank statements, tax docs | Paperless-ngx | Auto-file by correspondent + date |
+| Scanned forms | Paperless-ngx | Tesseract + paperless-gpt vision OCR |
+| Research PDFs, articles | DEVONthink | Semantic See Also, AI-assist filing, annotations |
+| Scripts, writing drafts | DEVONthink | Rich text, Markdown, version history |
+| Email archives | DEVONthink | Email import, threading, linking |
+| Legal documents | Both | Paperless for storage/OCR; DEVONthink for research/annotation |
+| Project knowledge bases | DEVONthink | Cross-link with Hookmark/HookVault |
+
+#### DEVONthink + HookVault Integration
+
+DEVONthink is listed in Hookmark's documented integrations — it is one of the
+native apps that Hookmark hooks into on Mac. Since HookVault replicates Hookmark
+for cloud files, the integration path is:
+
+```
+DEVONthink document → Hookmark on Mac → hook:// link created
+  → HookVault receives via webhook (triggered by Hazel or DEVONthink script)
+  → Raindrop entry created with DEVONthink item link as native_link
+  → SJL Hub: document appears in cluster graph linked to its project hub
+```
+DEVONthink MCP server (4.3) could also let Claude Code sessions:
+- Search DEVONthink for documents related to a current project
+- Create new research notes in DEVONthink linked to a project UUID24
+- Retrieve summaries without leaving the Claude Code session
+
+---
+
+### DOCUMENT TOOL RANKING
+
+**Rank 1 — Paperless-ngx + paperless-gpt (Docker, WebTop-native)**
+```
+Cost:       $0
+Platform:   Linux Docker — shannonjlove.cloud, browser-accessible
+Role:       Automated document pipeline (OCR, tag, file, search)
+Strength:   Fully automated; zero-touch from inbox to indexed searchable doc
+            Tesseract for clean PDFs; paperless-gpt + Ollama for hard cases
+            REST API → TagBot pre-seed → SJL rename → HookVault
+            800 MB RAM — lightweight addition to existing server stack
+Drawback:   No semantic "see also" — it's a filer, not a knowledge engine
+            AI features depend on Ollama being available (same host)
+Decision:   ALWAYS RUN. Primary document pipeline for all routine documents.
+```
+
+**Rank 2 — DEVONthink Server 4.3 (Mac-hosted, MCP-enabled)**
+```
+Cost:       $0 (lifetime license owned)
+Platform:   Mac required — home Mac mini recommended
+Role:       Knowledge management, research, deep document intelligence
+Strength:   No Linux equivalent for its AI filing + semantic search
+            MCP server (4.3): ~60 commands, Claude Code can query directly
+            Web server: browser access from Linux WebTop via VPN/tunnel
+            Hookmark integration (native) → HookVault bridgeable
+            Lifetime license: already paid, zero ongoing cost
+Drawback:   Requires a Mac running somewhere (home server or hosted)
+            Not suitable for fully automated pipeline (manual import or Hazel)
+            Cannot be containerized or deployed to shannonjlove.cloud
+Decision:   RUN as knowledge layer. Complement Paperless-ngx, don't replace it.
+            Mac mini at home is the right infrastructure. Tunnel web server through
+            shannonjlove.cloud nginx for WebTop browser access.
+```
+
+**Rank 3 — Paper Parrot**
+```
+Status:     UNRESOLVED — cannot be evaluated without URL/product identification
+Action:     SJL to provide URL or exact product name
+```
+
+---
+
+### UPDATED RAM BUDGET (FULL STACK)
+
+```
+PhotoPrism + MariaDB:                      ~600 MB
+Paperless-ngx + Redis + Postgres:          ~800 MB
+TagBot models (CLIP+BLIP+YOLO+Whisper+KB): ~4.2 GB
+Ollama phi3:mini:                          ~3.0 GB
+n8n + HookVault + FileWarden:              ~500 MB
+OS baseline:                               ~1.5 GB
+──────────────────────────────────────────────────
+Total (all services):                      ~10.6 GB
+Recommended server RAM:                    16 GB
+Minimum viable (CLIP+YOLO+Whisper+KB only): 8 GB
+```
+
+DEVONthink Server runs on the Mac mini — its RAM is separate from the server budget.
