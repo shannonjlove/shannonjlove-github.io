@@ -785,7 +785,7 @@ Completed / inactive since 2014–2023:
 | paperless-gpt | Sidecar to paperless-ngx | LLM vision OCR via Ollama — handles watermarks, sideways text, difficult scans |
 | DEVONthink Server | Mac-hosted (lifetime license) | Knowledge management + MCP server (4.3) — browser access from WebTop; Mac required |
 | PhotoSync | iOS app (owned) | Mobile photo upload to PhotoPrism from iPhone |
-| Paper Parrot | UNRESOLVED | Cannot find this product — needs URL/clarification from SJL |
+| Paper Parrot | iOS app (paperparrot.me) | Mobile companion to Paperless-ngx — browse, search, view, edit documents from iPhone |
 
 ---
 
@@ -2425,21 +2425,54 @@ running CLIP + YOLO + Whisper + KeyBERT only (~3 GB model RAM).
 
 PhotoPrism handles photos and video. A separate document intelligence layer handles
 PDFs, scans, invoices, contracts, scripts, correspondence, and research. Three tools
-were evaluated for this role: Paperless-ngx, DEVONthink Server, and Paper Parrot.
+make up this layer: Paperless-ngx (server), DEVONthink Server (Mac knowledge engine),
+and Paper Parrot (iOS mobile companion to Paperless-ngx).
 
 ---
 
-### PAPER PARROT — STATUS: UNRESOLVED
+### PAPER PARROT — iOS MOBILE COMPANION TO PAPERLESS-NGX ✦
 
-No product called "Paper Parrot" appears in any search index as of June 2026.
-No results for document management, image recognition, or file processing under
-this name. This may be:
-- A tool known under a different name
-- A very niche or private product not widely indexed
-- A product name remembered slightly differently
+**URL:** https://paperparrot.me
+**Platform:** iOS (App Store) — open source (GitHub)
+**Cost:** Free
+**Built by:** Leo Wehrfritz
 
-**Action required:** Provide a URL or the exact product name so it can be evaluated.
-Until resolved, "Paper Parrot" remains a placeholder in the tools list.
+Paper Parrot is a native iOS app that connects to a running Paperless-ngx instance.
+It is the mobile front-end for Paperless-ngx — the same relationship PhotoSync has
+to PhotoPrism. Paper Parrot does NOT process documents or run OCR — all intelligence
+happens in Paperless-ngx on the server; Paper Parrot is the mobile window into it.
+
+**What it does:**
+- Browse, search, and view all documents indexed by Paperless-ngx
+- Search by title, tags, correspondent, document type, creation date, or full content
+- View original documents (PDFs, scans) directly on iPhone
+- Edit document attributes: tags, correspondent, document type, date — from the phone
+- Share documents with one tap
+- Automatic attribute application rules (configured in Paperless-ngx, surfaced here)
+- Push notification support
+- Custom URL schemes for deep-linking into specific documents from other iOS apps
+
+**Confirmed compatible with:** Paperless-ngx (and the legacy Paperless-ng)
+
+**Role in SJL system:**
+Paper Parrot is to Paperless-ngx what PhotoSync is to PhotoPrism — the iPhone
+access layer. With Paperless-ngx running at `docs.shannonjlove.cloud` and Paper
+Parrot on iPhone, any document in the system is searchable and viewable from anywhere.
+Since paperless-gpt handles AI tagging and title generation on the server side,
+Paper Parrot surfaces clean, properly-titled, well-tagged documents on the phone
+without any mobile processing overhead.
+
+**Setup:**
+- Install Paper Parrot from App Store
+- Configure server URL: `https://docs.shannonjlove.cloud`
+- Enter Paperless-ngx credentials
+- All documents auto-appear; search is instant (full-text index from server)
+
+**Limitations:**
+- Read/edit only — cannot upload/ingest new documents from phone (use Files app or
+  email to Paperless consume folder instead)
+- Requires Paperless-ngx to be running and reachable over HTTPS
+- iOS only — no Android version
 
 ---
 
@@ -2735,10 +2768,21 @@ Decision:   RUN as knowledge layer. Complement Paperless-ngx, don't replace it.
             shannonjlove.cloud nginx for WebTop browser access.
 ```
 
-**Rank 3 — Paper Parrot**
+**Rank 3 — Paper Parrot (iOS, free)**
 ```
-Status:     UNRESOLVED — cannot be evaluated without URL/product identification
-Action:     SJL to provide URL or exact product name
+Cost:       $0
+Platform:   iOS (App Store); open source
+Role:       Mobile companion to Paperless-ngx — browse, search, view, edit from iPhone
+Strength:   Native iOS app; full-text search against Paperless-ngx index
+            Edit tags, correspondents, document types from phone
+            Push notifications; custom URL schemes for deep-linking
+            Pairs with Paperless-ngx exactly as PhotoSync pairs with PhotoPrism
+            Zero server overhead — all intelligence stays on Paperless-ngx
+Drawback:   iOS-only (no Android); no ingest from phone
+            Read/edit only — cannot push new documents into Paperless from app
+            Requires Paperless-ngx reachable via HTTPS (docs.shannonjlove.cloud)
+Decision:   INSTALL. Completes the mobile access layer for documents.
+            The trio is: Paperless-ngx (server) + paperless-gpt (AI) + Paper Parrot (iOS).
 ```
 
 ---
