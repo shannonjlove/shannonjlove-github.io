@@ -18,9 +18,11 @@ echo "==> Installing Podman Quadlet unit..."
 cp "$(dirname "${BASH_SOURCE[0]}")/webtop.container" "$QUADLET_DIR/webtop.container"
 chmod 644 "$QUADLET_DIR/webtop.container"
 
-echo "==> Reloading systemd and enabling WebTop..."
+echo "==> Reloading systemd and starting WebTop..."
 systemctl daemon-reload
-systemctl enable --now webtop.service
+# Podman Quadlet units are auto-generated — systemctl enable doesn't apply.
+# Placing the file in /etc/containers/systemd/ is enough for auto-start at boot.
+systemctl start webtop.service
 
 echo ""
 echo "Done! WebTop is starting."
