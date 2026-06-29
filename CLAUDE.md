@@ -767,13 +767,13 @@ Completed / inactive since 2014–2023:
 | Tool | Location | Purpose |
 |---|---|---|
 | `filewarden.py` | `SJL-Personal-Server_PROJECTS_gDrive/Auto/` | Watchdog: auto-rename + auto-hook |
-| `hookvault.py` | Same | Webhook manager: fires HookVault payloads to Raindrop |
+| `hookvault.py` | Same | Webhook manager: fires HookVault payloads to Raindrop + SJL Hub |
 | `diffforge.py` | Same | Diff/comparison utility |
 | `DEPLOY.sh` | Same | Deployment script |
 | `config.yaml` | Same | FileWarden rules: inbox routing, categories, rename patterns |
 | Raindrop.io | Cloud | Universal link browser; Hookmark equivalent for cloud files |
+| SJL Hub | `hub.shannonjlove.cloud` | Custom cluster management UI (see Part 10) |
 | n8n | shannonjlove.cloud | Automation platform; receives HookVault webhooks |
-| BookStack | TBD | Internal documentation wiki; this CLAUDE.md is the source |
 | Paper Parrot | TBD | Document export destination |
 
 ---
@@ -791,4 +791,315 @@ Completed / inactive since 2014–2023:
 | Master server | shannonjlove.cloud (personal server; FileWarden runs here) |
 | Canonical cloud | Google Drive (sjlove@shannonjeffreylove.com) |
 | Link hub | Raindrop.io |
+| Cluster UI | SJL Hub at `hub.shannonjlove.cloud` (see Part 10) |
 | Automation | n8n at shannonjlove.cloud + HookVault webhooks |
+
+---
+
+## PART 10 — CLUSTER MANAGEMENT UI: SJL HUB
+
+### What This Solves
+
+Raindrop.io is the real-time webhook sink, universal link resolver, and search layer.
+But it is a bookmark manager — it does not visualize file clusters, render bidirectional
+relationship graphs, manage the processing queue, or serve as a human-readable project
+dashboard. SJL Hub fills that gap as the visual layer on top of HookVault.
+
+**Domain:** `hub.shannonjlove.cloud`
+**Also serves as:** Universal Link resolver — `hub.shannonjlove.cloud/open?id=[UUID24]`
+redirects to the file's native cloud URL via UUID lookup in the HookVault database.
+
+---
+
+### OPTION A — Wiki.js (Self-Hosted)
+
+Wiki.js is a self-hosted, open-source wiki with a GraphQL API. Docker-deployable on
+`shannonjlove.cloud`. HookVault fires to its API alongside Raindrop as a second sink.
+
+**Strengths:**
+- Hours to deploy (Docker + nginx config)
+- Built-in full-text search across all pages
+- Plugin ecosystem: diagrams, embeds, analytics
+- Git-backed storage — wiki pages version-controlled
+- $0 ongoing cost (server already exists)
+
+**Limitations:**
+- Generic wiki UX — not designed for the HookVault data model
+- No cluster graph visualization
+- Does not serve as Universal Link resolver
+- Bidirectional linking via `[[page-link]]` syntax only — no visual relationship map
+- Every file page must be manually structured or scripted
+
+**Wiki.js Project Hub Page Structure:**
+```markdown
+# Our-Time_PROJECTS_gDrive
+**Status:** Active | **Cloud:** gDrive | **Files:** 12 | **Hub Created:** 2026-06-29
+
+## Files in This Project
+- [[2026-06-29_creative-film_our-time-screenplay_UUID24.pdf]] — gDrive
+- [[2026-06-15_media-video_our-time-promo-cut_UUID24.mov]] — pCloud
+- [[2026-05-01_document-pdf_our-time-pitch-deck_UUID24.pdf]] — gDrive
+
+## Related Projects
+- [[Built-For-This_PROJECTS_gDrive]]
+
+## Subfolders
+- [[Our-Time-Promo/]] · [[Our-Time-Pitch-Deck/]]
+```
+
+**Wiki.js File Page Structure:**
+```markdown
+# 2026-06-29_creative-film_our-time-screenplay_UUID24.pdf
+**Cloud:** gDrive | **PARA:** Projects | **Project:** [[Our-Time_PROJECTS_gDrive]]
+**UUID24:** `a1b2c3d4e5f6a1b2c3d4e5f6`
+
+| Link Type | URL |
+|---|---|
+| Native | https://drive.google.com/file/d/[id]/view |
+| Universal | https://hub.shannonjlove.cloud/open?id=a1b2c3d4e5f6a1b2c3d4e5f6 |
+| Deep | https://drive.google.com/file/d/[id]/view#page=1 |
+| Markdown | `[filename](clean-url)` |
+| Search | `hook://search?q=a1b2c3d4e5f6a1b2c3d4e5f6` |
+
+**Siblings:** [[file2]] · [[file3]]
+```
+
+**HookVault → Wiki.js GraphQL Mutations:**
+```graphql
+# Create a new page
+mutation CreatePage($title: String!, $content: String!, $path: String!) {
+  pages {
+    create(
+      title: $title
+      content: $content
+      path: $path
+      editor: "markdown"
+      locale: "en"
+      isPublished: true
+    ) {
+      responseResult { succeeded message }
+      page { id path }
+    }
+  }
+}
+
+# Update existing page (idempotent — update by UUID24 slug, never create duplicate)
+mutation UpdatePage($id: Int!, $content: String!) {
+  pages {
+    update(id: $id, content: $content) {
+      responseResult { succeeded message }
+    }
+  }
+}
+```
+
+HookVault fires to Wiki.js immediately after firing to Raindrop. If a page already
+exists for this UUID24, it updates in place. UUID24 is the page slug — permanent identity.
+
+---
+
+### OPTION B — SJL Hub (Lovable → Self-Hosted) ✦ RECOMMENDED
+
+A purpose-built React app generated in Lovable, exported to GitHub, and self-hosted
+on `shannonjlove.cloud`. Designed from the ground up around the HookVault data model.
+
+**IP Ownership:** Lovable generates standard React + TypeScript + Tailwind CSS + shadcn/ui.
+Export to GitHub the moment the core is stable. Deploy anywhere. Cancel the Lovable
+subscription — the code is yours permanently. No ongoing dependency on Lovable's
+existence, pricing, or terms.
+
+**Tech Stack:**
+```
+Frontend:    React 18 + TypeScript + Tailwind CSS + shadcn/ui
+Routing:     React Router v6
+Data layer:  Raindrop.io REST API + HookVault internal REST API
+Graph:       React Flow (cluster visualization)
+Hosting:     shannonjlove.cloud — nginx reverse proxy + pm2 process manager
+Repo:        shannonjlove/sjl-hub
+Domain:      hub.shannonjlove.cloud
+```
+
+**Screens — Sprint 1 (core, build in Lovable):**
+
+```
+1. DASHBOARD
+   - PARA overview: 5 buckets × 8 clouds = 40 folder tiles with file counts
+   - Recent activity feed: last 20 HookVault events (rename, route, hook)
+   - Quick stats: total files, active projects, unprocessed inbox items
+   - Cloud health indicators: which clouds are connected + synced
+
+2. PROJECT HUB VIEW
+   - Card grid of all active project hubs (pinned = top row)
+   - Each card: project name, cloud, file count, last activity, cluster preview
+   - Drill down → Project Detail page
+
+3. PROJECT DETAIL
+   - All files in the project listed with their 6 link types
+   - Subfolders shown (e.g. Our-Time-Promo/, Our-Time-Pitch-Deck/)
+   - Related projects linked
+   - Hub Raindrop entry embedded
+
+4. FILE DETAIL
+   - All 6 links displayed and copyable (Native, Clean, Universal, Markdown, Deep, Search)
+   - Bidirectional connections: Project Hub + sibling files
+   - Cloud badge, PARA bucket, category/subcategory, UUID24
+   - Processing status: when renamed, when hooked, when routed
+
+5. UNIVERSAL LINK RESOLVER
+   GET /open?id=[UUID24]
+   → look up UUID24 in HookVault DB
+   → 302 redirect to native cloud URL
+   → if URL dead: show fallback with search_link + last-known location
+```
+
+**Screens — Sprint 2 (power features, build post-Lovable in code):**
+
+```
+6. CLUSTER GRAPH
+   - React Flow canvas: project hubs as large nodes, files as smaller nodes
+   - Edges = bidirectional relationships (hub↔file, file↔sibling, page↔PDF)
+   - Color coded by cloud; filter by PARA bucket, cloud, project
+   - Click any node → File Detail or Project Detail
+
+7. INBOX QUEUE
+   - All unprocessed files across all @INBOX folders
+   - Trigger rename/categorize/route directly from UI
+   - Batch actions: rename all, route all to PARA
+
+8. PARA NAVIGATOR
+   - Single tree view of all 8 clouds × 5 PARA buckets
+   - Expand any folder to see its files
+   - Cross-cloud search by UUID24, filename, category, or project
+
+9. CHANGES LOG
+   - Full audit trail: every rename, move, version, migration
+   - Filter by file, project, cloud, date range
+   - Link to before/after states
+
+10. SETTINGS
+    - Cloud API connections (gDrive, pCloud, MediaFire, Dropbox, MEGA, iCloud)
+    - Raindrop.io API key
+    - HookVault webhook endpoint
+    - Wiki.js GraphQL endpoint (if using as secondary sink)
+```
+
+**HookVault → SJL Hub API Endpoint (alongside Raindrop):**
+```
+POST https://hub.shannonjlove.cloud/api/hook
+Authorization: Bearer [HOOKVAULT_SECRET]
+Content-Type: application/json
+
+Body: same HookVault webhook payload (see Part 3)
+```
+
+Hub stores all payloads in its own SQLite/PostgreSQL database.
+UUID24 is the primary key. Upsert on every incoming payload — idempotent.
+
+**Deployment on shannonjlove.cloud:**
+```bash
+# Build
+npm run build
+
+# Serve via pm2
+pm2 start npm --name sjl-hub -- start
+
+# nginx reverse proxy
+server {
+    listen 443 ssl;
+    server_name hub.shannonjlove.cloud;
+    location / { proxy_pass http://localhost:3000; }
+}
+```
+
+---
+
+### SIDE-BY-SIDE COMPARISON
+
+| Factor | Wiki.js | SJL Hub (Lovable) |
+|---|---|---|
+| Build time | Hours (Docker + config) | Days (Lovable sprint) |
+| UX fit | Generic wiki | Purpose-built for SJL system |
+| Cluster graph | Text [[links]] only | React Flow visual graph (Sprint 2) |
+| Universal Link resolver (`/open?id=`) | No | Yes — built-in |
+| Bidirectional linking | `[[wiki-links]]` | Full relationship model with graph |
+| Inbox queue management | No | Yes (Sprint 2) |
+| Full-text search | Built-in | Build or integrate Algolia/Fuse.js |
+| IP ownership | Open source (MIT) | 100% yours after GitHub export |
+| Lovable subscription needed | Never | Build phase only — cancel after |
+| Ongoing cost | $0 | $0 (hosting on existing server) |
+| Maintenance | Docker + plugin updates | Code you own; standard React app |
+| HookVault integration | GraphQL mutations | REST POST to `/api/hook` |
+| Git-backed content | Yes (built-in) | Via GitHub repo for the app itself |
+| Secondary wiki/docs layer | IS the wiki | Can embed Wiki.js inside as `/docs` |
+
+---
+
+### DECISION AND RATIONALE
+
+**Build SJL Hub in Lovable. Self-host on `hub.shannonjlove.cloud`.**
+
+Wiki.js is a square peg. Its wiki-page structure fights the HookVault data model at every
+turn — project hubs become wiki pages with awkward markup instead of first-class data
+objects, and cluster visualization is impossible without heavy custom plugins.
+
+Lovable generates the core app in days. Export to `shannonjlove/sjl-hub` on GitHub.
+Deploy to `hub.shannonjlove.cloud`. Cancel Lovable. From that point it's a standard
+React codebase — maintained, extended, and deployed the same way as any other project
+on the server. The Lovable subscription was the scaffold, not the foundation.
+
+Wiki.js remains useful as a lightweight secondary layer for long-form documentation
+pages (this CLAUDE.md exported, tool guides, workflow notes) — mounted at
+`hub.shannonjlove.cloud/docs` or `docs.shannonjlove.cloud` as a companion, not a replacement.
+
+---
+
+### BUILD PHASE PLAN
+
+**Sprint 1 — Lovable (target: 3–5 days)**
+- [ ] Write Lovable prompt from this spec (Screens 1–5 + `/open` resolver)
+- [ ] Generate app in Lovable
+- [ ] Export to GitHub repo `shannonjlove/sjl-hub`
+- [ ] Connect Raindrop.io REST API (read collections + bookmarks)
+- [ ] Connect HookVault internal API
+- [ ] Deploy to `hub.shannonjlove.cloud` via nginx + pm2
+- [ ] Wire HookVault to POST to `/api/hook` on every file event
+- [ ] Test Universal Link resolution with 5 real UUID24 files
+- [ ] Cancel Lovable subscription (code is exported and owned)
+
+**Sprint 2 — Direct code (post-Lovable)**
+- [ ] Add React Flow cluster graph (Screen 6)
+- [ ] Add Inbox Queue (Screen 7)
+- [ ] Add PARA Navigator cross-cloud tree (Screen 8)
+- [ ] Add Changes Log (Screen 9)
+- [ ] (Optional) Mount Wiki.js at `/docs` for long-form documentation
+
+**Lovable Prompt Seed (use when starting the build):**
+```
+Build a file cluster management dashboard called "SJL Hub" for a personal cloud
+file organization system. Tech stack: React 18, TypeScript, Tailwind CSS, shadcn/ui,
+React Router v6.
+
+The system manages files across 8 cloud services (Google Drive, MediaFire, pCloud,
+Dropbox personal, Dropbox-biz, MEGA, iCloud, and a personal server) organized into
+a PARA structure (Projects, Areas, Resources, Archives, Inbox) with 5 folders per cloud.
+
+Every file has a UUID24 permanent identity and 6 link types: native, clean, universal,
+markdown, deep, and search. Files belong to project clusters with bidirectional links
+to a project hub and to sibling files.
+
+Build these screens:
+1. Dashboard — PARA bucket overview (5 × 8 = 40 folder tiles), recent activity feed,
+   cloud health indicators
+2. Project Hub View — pinned active project cards with file counts, drill to detail
+3. Project Detail — file list with all 6 link types, subfolders, related projects
+4. File Detail — all 6 links copyable, bidirectional connections, UUID24 display,
+   cloud + PARA + category metadata
+5. Universal Link Resolver — GET /open?id=[UUID24] → 302 redirect to native cloud URL,
+   fallback UI if URL dead
+
+Data comes from two REST APIs: Raindrop.io (bookmarks/collections) and HookVault
+(internal file database, POST /api/hook for incoming file events). Use mock data
+for the initial build.
+
+Dark mode by default. Clean, minimal design. Mobile-responsive.
+```
