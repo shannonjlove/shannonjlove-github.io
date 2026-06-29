@@ -1103,3 +1103,421 @@ for the initial build.
 
 Dark mode by default. Clean, minimal design. Mobile-responsive.
 ```
+
+---
+
+## PART 11 — MEDIA RECOGNITION & AUTO-TAGGING: TAGBOT
+
+### What This Solves
+
+FileWarden renames files by extension and routes them by type, but it has no awareness
+of what is *inside* a file. TagBot is a self-hosted Python service that analyzes file
+content and returns: a suggested description (for the SJL filename), category-confirmed
+tags, a human-readable caption, and confidence scores. FileWarden calls TagBot before
+completing the rename step so the UUID24 filename is semantically meaningful, not generic.
+
+**Everything runs on `shannonjlove.cloud`. No cloud APIs. No per-file cost. No data leaves the server.**
+
+**Service name:** `tagbot.py` (FastAPI service, internal port 8001)
+**Called by:** FileWarden at Step 2.5 — between IDENTIFY and APPLY SJL RENAME
+**Output feeds:** SJL filename description, Raindrop tags, SJL Hub metadata
+
+---
+
+### WHAT TAGBOT NEEDS TO HANDLE BY FILE TYPE
+
+| File Type | Task | Key Challenges |
+|---|---|---|
+| Photo (JPG/PNG/RAW) | Scene + object tagging, caption, optional face ID | RAW decode, lighting variation, personal photo context |
+| Video (MP4/MOV/MKV) | Scene tags from keyframes + speech transcription | Large files, temporal sampling, audio extraction |
+| Audio (MP3/WAV/M4A) | Speech transcription, music vs speech detection | Background noise, music files have no useful transcript |
+| PDF (text) | Text extraction, keyword summary, topic tags | Multi-column layouts, scanned vs digital |
+| PDF (scanned) | OCR → text → keywords | Image quality, handwriting |
+| DOCX/TXT/MD | Text extraction, keyword summary | Simple; already text |
+| RAW camera files | Decode + treat as photo | Proprietary codecs (CR2, ARW, DNG) |
+
+---
+
+### OPTION MATRIX — SELF-HOSTED MODELS
+
+#### IMAGES & PHOTOS
+
+**Option A — CLIP (Recommended for tagging)**
+```
+Model:    openai/clip-vit-base-patch32 (fast) or clip-vit-large-patch14 (accurate)
+Task:     Zero-shot image classification against a custom tag vocabulary
+How:      Feed image + list of candidate tags; CLIP scores each tag by similarity
+Speed:    ~200ms per image on CPU (base model)
+GPU:      Not required
+Install:  pip install transformers torch Pillow
+Strength: Tag anything without training data — just describe it in words
+Weakness: Doesn't generate captions; needs a predefined tag list to score against
+```
+
+**Option B — BLIP-2 / BLIP (Recommended for captions)**
+```
+Model:    Salesforce/blip-image-captioning-base (fast) or blip2-opt-2.7b (richer)
+Task:     Generate a natural-language description of the image
+How:      Image in → caption out ("a woman speaking at a podium outdoors")
+Speed:    2–4 seconds per image on CPU (base); 10–30s for blip2 on CPU
+GPU:      Optional for base; recommended for blip2
+Install:  pip install transformers torch Pillow
+Strength: Auto-generates the SJL filename description segment
+Weakness: blip2 is slow on CPU; base model captions are simple
+```
+
+**Option C — YOLOv8 (Object detection layer)**
+```
+Model:    YOLOv8n (nano — fastest) to YOLOv8x (most accurate)
+Task:     Detect and label objects + people in frame with bounding boxes
+How:      Returns class labels + confidence scores for every detected object
+Speed:    50–150ms per image on CPU (nano model)
+GPU:      Not required for nano/small
+Install:  pip install ultralytics
+Strength: Fast, reliable object list; complements CLIP scene tags
+Weakness: 80 COCO classes only — no custom categories without fine-tuning
+```
+
+**Option D — DeepFace (Face recognition — optional)**
+```
+Model:    VGG-Face, Facenet, ArcFace (selectable backend)
+Task:     Detect faces, identify recurring people, estimate age/gender/emotion
+How:      Builds a face database from known photos; matches new photos against it
+Speed:    1–3 seconds per image on CPU
+GPU:      Not required
+Install:  pip install deepface
+Strength: Tags family members by name across entire photo library
+Weakness: Requires a labeled "known faces" seed set; privacy consideration
+Use when: Processing personal/family photos only
+```
+
+**Option E — Ollama + LLaVA (Vision-language, richest output)**
+```
+Model:    LLaVA 7B (via Ollama) — llava:7b
+Task:     Full visual question-answering; describe anything in natural language
+How:      "Describe this image for a file tagging system. List: scene, objects,
+           people, mood, setting, key colors." → rich structured response
+Speed:    30–120 seconds per image on CPU (very slow without GPU)
+GPU:      Strongly recommended; 8GB VRAM minimum for 7B
+Install:  Install Ollama → ollama pull llava:7b
+Strength: Most intelligent output; understands context, mood, composition
+Weakness: Prohibitively slow on CPU for large photo libraries
+```
+
+**Recommended image stack (CPU-only server):**
+```
+CLIP (base)  → scene + category tags       [fast, always-on]
+BLIP (base)  → caption → filename desc     [moderate speed]
+YOLOv8n     → object labels               [very fast]
+DeepFace     → face tags (opt-in per run)  [moderate speed]
+```
+Add Ollama/LLaVA only if you add a GPU to the server later.
+
+---
+
+#### VIDEO
+
+**Option A — ffmpeg + image model pipeline (Recommended)**
+```
+Tool:   ffmpeg (already standard on Linux servers)
+Task:   Extract keyframes at regular intervals → run image models on each frame
+How:    ffmpeg -i video.mp4 -vf fps=1/10 frame_%04d.jpg
+        (1 frame per 10 seconds → CLIP + BLIP + YOLO on each)
+        Aggregate tags across all frames; take most frequent as file tags
+Speed:  Extraction fast; image processing = N_frames × per-frame time
+Strength: No new models needed; reuses the image stack
+Weakness: Misses motion/action context; only sees still frames
+```
+
+**Option B — Whisper (Speech transcription from video audio)**
+```
+Model:    openai/whisper (self-hosted via faster-whisper or whisper.cpp)
+Task:     Extract audio track → transcribe speech → keywords → tags
+Models:   tiny (fastest), base, small (recommended), medium, large
+Speed:    base model: ~5–10x realtime on CPU (60s video → 6–12s to transcribe)
+          small model: ~3–5x realtime on CPU
+          medium model: ~1–2x realtime on CPU
+GPU:      Not required for base/small; medium works well on CPU
+Install:  pip install faster-whisper  (faster than original openai-whisper on CPU)
+Strength: Transcribes dialogue, narration, interviews — most content-rich signal
+Weakness: Useless for music videos or no-dialogue footage
+Use:      Always run on video; only use output if speech detected (VAD filter)
+```
+
+**Option C — Scene detection (PySceneDetect)**
+```
+Tool:   PySceneDetect
+Task:   Detect scene cuts → extract one representative frame per scene
+How:    More intelligent than uniform fps sampling; captures visual variety
+Speed:  Fast (pure video analysis, no ML)
+Install: pip install scenedetect[opencv]
+Strength: Better keyframe selection than uniform interval
+Use:    Replace ffmpeg fps= extraction with scene-aware extraction
+```
+
+**Recommended video pipeline:**
+```
+1. PySceneDetect   → find scene boundaries
+2. ffmpeg           → extract 1 frame per scene (max 20 frames per file)
+3. CLIP + YOLOv8n  → tag each keyframe
+4. faster-whisper   → transcribe audio track (small model)
+5. Aggregate        → union of frame tags + top transcript keywords
+```
+
+---
+
+#### AUDIO
+
+**Option A — faster-whisper (Recommended)**
+```
+Same as video audio pipeline above.
+For music files: run Whisper; if < 10% speech detected (VAD), skip transcript,
+tag as music-audio and extract metadata via mutagen (artist, album, BPM, genre).
+```
+
+**Option B — mutagen (Music metadata)**
+```
+Library: mutagen
+Task:    Read ID3/MP4/FLAC tags: artist, album, year, genre, BPM, track title
+Speed:   Instant (reads file headers, no ML)
+Install: pip install mutagen
+Use:     Always run on audio files before Whisper to capture embedded metadata
+```
+
+---
+
+#### DOCUMENTS & PDFs
+
+**Option A — Marker (Recommended for digital PDFs)**
+```
+Tool:   VikParuchuri/marker
+Task:   Convert PDF → clean Markdown (preserves structure, tables, equations)
+Speed:  ~5–15 seconds per page on CPU
+Install: pip install marker-pdf
+Strength: Best-in-class PDF → text for complex layouts (better than pdfminer)
+Weakness: Slower than simple text extraction for text-only PDFs
+Use:    Run on all PDFs; fall back to pdfminer for speed if needed
+```
+
+**Option B — Tesseract OCR (For scanned PDFs)**
+```
+Tool:   Tesseract 5 + pytesseract
+Task:   OCR on scanned/image-based PDFs
+Speed:  1–5 seconds per page on CPU
+Install: apt install tesseract-ocr && pip install pytesseract pdf2image
+Strength: Mature, accurate, 100+ languages
+Weakness: Struggles with handwriting; needs image preprocessing for dirty scans
+Use:    Run only when Marker/pdfminer returns < 100 characters of text (likely scanned)
+```
+
+**Option C — Unstructured.io (self-hosted Docker)**
+```
+Tool:   unstructured-io/unstructured (Docker container)
+Task:   Universal document parser: PDF, DOCX, XLSX, HTML, images
+Speed:  Variable; Docker overhead
+Install: docker pull quay.io/unstructured-io/unstructured
+Strength: One API handles all document types; partition() returns structured elements
+Weakness: Docker dependency; overkill if only handling PDF + DOCX
+Use:    Consider if document variety grows beyond PDF/DOCX
+```
+
+**Keyword/tag extraction from text (all document types):**
+```
+Tool:   KeyBERT (semantic keyword extraction)
+Model:  all-MiniLM-L6-v2 (small, fast, CPU-friendly)
+Task:   Extract the top 5–10 most relevant keywords from extracted text
+Speed:  < 1 second per document on CPU
+Install: pip install keybert sentence-transformers
+Output: ["screenplay", "feature-film", "our-time", "dialogue", "second-act"]
+        → becomes SJL filename description + Raindrop tags
+```
+
+---
+
+### RECOMMENDED FULL STACK (CPU-ONLY, SELF-HOSTED)
+
+```
+FILE TYPE     TOOL CHAIN                                    OUTPUT
+──────────    ─────────────────────────────────────────    ──────────────────────────
+Photo         CLIP (tags) + BLIP-base (caption)            description, tags[]
+              + YOLOv8n (objects)
+              + DeepFace (opt-in, known faces only)        + person tags
+
+Video         PySceneDetect (keyframes)                    tags[], transcript,
+              + CLIP + YOLOv8n (per frame)                 description
+              + faster-whisper small (speech)
+
+Audio         mutagen (metadata) + faster-whisper small    tags[], transcript
+              + VAD filter (skip whisper if music)
+
+PDF (digital) Marker (PDF→text) + KeyBERT (keywords)      tags[], description
+PDF (scanned) Tesseract OCR + KeyBERT                      tags[], description
+
+DOCX/TXT/MD   python-docx / plain read + KeyBERT           tags[], description
+RAW photo     rawpy (decode) → numpy array → CLIP+BLIP     same as photo
+```
+
+**Python packages total:**
+```bash
+pip install transformers torch Pillow              # CLIP, BLIP
+pip install ultralytics                            # YOLOv8
+pip install deepface                               # Face recognition (optional)
+pip install faster-whisper                         # Audio/video transcription
+pip install scenedetect[opencv]                    # Video scene detection
+pip install marker-pdf                             # PDF parsing
+pip install pytesseract pdf2image                  # Scanned PDF OCR
+pip install mutagen                                # Audio metadata
+pip install keybert sentence-transformers          # Keyword extraction
+pip install rawpy                                  # RAW camera file decode
+pip install fastapi uvicorn                        # TagBot API server
+```
+
+---
+
+### TAGBOT SERVICE ARCHITECTURE
+
+```
+tagbot.py  —  FastAPI service running on shannonjlove.cloud:8001
+```
+
+**API endpoint:**
+```
+POST http://localhost:8001/tag
+Content-Type: application/json
+
+{
+  "file_path": "/data/inbox/IMG_4821.jpg",
+  "file_type": "image",           # image | video | audio | pdf | document
+  "hints": {                      # optional — from FileWarden's initial detection
+    "project": "Our-Time",
+    "cloud": "gdrive"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "suggested_description": "outdoor-speaking-event-podium",
+  "caption": "A woman speaking at a podium at an outdoor event",
+  "tags": ["media", "image", "outdoor", "speaking", "event", "people"],
+  "category": "media",
+  "subcategory": "image",
+  "category_confidence": 0.94,
+  "objects_detected": ["person", "microphone", "podium", "crowd"],
+  "faces_detected": 1,
+  "face_tags": [],
+  "transcript": null,
+  "keywords": [],
+  "processing_time_ms": 840,
+  "models_used": ["clip-vit-base-patch32", "blip-base", "yolov8n"]
+}
+```
+
+**FileWarden integration (updated Step 2.5):**
+```python
+# In filewarden.py, between identify() and _sjl_rename()
+def _call_tagbot(file_path: str, file_type: str, hints: dict) -> dict:
+    resp = requests.post(
+        "http://localhost:8001/tag",
+        json={"file_path": str(file_path), "file_type": file_type, "hints": hints},
+        timeout=120  # large files may take time
+    )
+    return resp.json() if resp.ok else {}
+
+# TagBot output overrides FileWarden's generic description if confidence > 0.7
+tagbot_result = _call_tagbot(file_path, file_type, hints)
+if tagbot_result.get("category_confidence", 0) > 0.7:
+    description = tagbot_result["suggested_description"]
+    extra_tags  = tagbot_result["tags"]
+```
+
+**TagBot internal routing:**
+```python
+ROUTERS = {
+    "image":    [run_clip, run_blip, run_yolo],
+    "video":    [run_scene_detect, run_clip_frames, run_whisper],
+    "audio":    [run_mutagen, run_whisper],
+    "pdf":      [run_marker, run_keybert],
+    "document": [run_text_extract, run_keybert],
+}
+
+@app.post("/tag")
+async def tag_file(req: TagRequest):
+    handlers = ROUTERS.get(req.file_type, [run_keybert])
+    results = {}
+    for handler in handlers:
+        results.update(await handler(req.file_path, req.hints))
+    return merge_results(results)
+```
+
+**Caching (avoid reprocessing):**
+```python
+# Hash file content → cache result in SQLite
+# If file_hash exists in cache → return cached result instantly
+# Cache lives in /data/tagbot/cache.db
+```
+
+---
+
+### RESOURCE REQUIREMENTS
+
+| Model | RAM (CPU) | Disk | First-load time | Per-file time |
+|---|---|---|---|---|
+| CLIP base | ~600 MB | 350 MB | ~8s | ~200ms |
+| BLIP base | ~900 MB | 450 MB | ~12s | 2–4s |
+| YOLOv8n | ~100 MB | 6 MB | ~1s | ~80ms |
+| DeepFace | ~500 MB | 250 MB | ~10s | 1–3s |
+| faster-whisper small | ~500 MB | 244 MB | ~5s | 3–5× realtime |
+| KeyBERT (MiniLM) | ~120 MB | 80 MB | ~3s | <1s |
+| Marker | ~1.5 GB | 1.2 GB | ~20s | 5–15s/page |
+| **Total (all loaded)** | **~4.2 GB RAM** | **~2.6 GB disk** | — | — |
+
+**Minimum server spec to run TagBot:**
+- RAM: 6 GB available (8 GB total recommended)
+- Disk: 5 GB for models + working space
+- CPU: Any modern multi-core (models are parallelizable)
+- GPU: Not required; add later to cut per-file time by 10–20×
+
+Models are loaded once at startup and kept in memory. Per-file processing is fast
+after the initial model load. TagBot runs as a persistent pm2 process alongside n8n
+and HookVault.
+
+---
+
+### PROCESSING MODES
+
+**Mode 1 — Real-time (default)**
+FileWarden calls TagBot synchronously before rename. Max wait: 120s (large video).
+Suitable for files processed one at a time from @INBOX.
+
+**Mode 2 — Batch (for initial library processing)**
+```bash
+python tagbot_batch.py --path /data/inbox --workers 2
+```
+Processes entire directory with 2 parallel workers. Writes results to
+`/data/tagbot/batch_results.jsonl` for FileWarden to consume.
+
+**Mode 3 — Async queue (for large video files)**
+FileWarden submits to TagBot queue → gets a job_id → continues with generic rename →
+TagBot completes analysis → fires webhook back to FileWarden → FileWarden updates
+Raindrop entry with enriched tags (UUID24 stays stable; Raindrop entry updated in place).
+
+---
+
+### BUILD PLAN
+
+- [ ] Set up Python 3.11 venv on shannonjlove.cloud for TagBot
+- [ ] Install model packages (see pip list above)
+- [ ] Pre-download models on first run (HuggingFace cache: `~/.cache/huggingface/`)
+- [ ] Build `tagbot.py` FastAPI service with ROUTERS dict
+- [ ] Implement CLIP + BLIP handlers (images first — most common file type)
+- [ ] Implement YOLOv8n handler
+- [ ] Implement faster-whisper handler (video + audio)
+- [ ] Implement Marker + KeyBERT handler (PDFs)
+- [ ] Implement SQLite result cache
+- [ ] Add TagBot call to `filewarden.py` between identify() and _sjl_rename()
+- [ ] Deploy as pm2 process: `pm2 start tagbot.py --name tagbot`
+- [ ] Test with sample files from each type (photo, video, PDF, audio)
+- [ ] Add DeepFace handler (opt-in, configured per run or per folder)
+- [ ] Add rawpy handler for RAW camera files
