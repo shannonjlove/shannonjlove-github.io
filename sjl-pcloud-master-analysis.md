@@ -1,10 +1,10 @@
 # SJL pCloud Master Analysis
 **Generated:** 2026-06-29  
-**Updated:** 2026-07-11 (Phase 1 execution completed)  
+**Updated:** 2026-07-11 (Phase 2 execution completed)  
 **Account:** shannonjlove@mac.com  
 **Token type:** Non-expiring pCloud access token  
 **Storage:** ~2.2 TB used  
-**Root item count:** 1,103 (files + folders) — reduced ~562 MB + 390 files from C4D auto-save deletion
+**Root item count:** significantly reduced — ~643 MB freed + 900+ files/folders routed or deleted across Phase 1 & 2
 
 > **SAFETY RULE:** No file is deleted, renamed, or moved until Shannon reviews and approves this list section by section.
 
@@ -59,6 +59,90 @@ All operations below were approved by Shannon and executed via pCloud REST API. 
 
 ### Stash App Note
 `SOTS.library` (FCPX library) and the elephant `.M4V` video are now in `@AREAS_pcloud/Stash/`. Configure your Stash app to point to `@AREAS_pcloud/Stash/` in pCloud to have these files appear in your Stash library.
+
+---
+
+### Phase 2 — Root Cleanup (2026-07-11) ✓
+
+All items below were approved by Shannon (answers: "1. yes / 2. yes / 3. ok / 4. ok / 5. deploy") and executed.
+
+#### Phase 2-A: GI Render Cache Deletion ✓ (16 files, ~81.5 MB freed)
+| Extension | Files | Action |
+|---|---|---|
+| `.gil` | 3 | Deleted |
+| `.gi` | 2 | Deleted |
+| `.gi2` | 3 | Deleted |
+| `.ao` | 4 | Deleted |
+| `.gir` | 4 | Deleted |
+
+#### Phase 2-B: UUID PSDs → Graphics-Assets ✓
+| File | Size | Moved To |
+|---|---|---|
+| `06c40886-..._1.psd` (id=70251376112) | 27.3 MB | `@RESOURCES_pcloud/Graphics-Assets/` |
+| `06c40886-....psd` (id=70172937513) | 25.3 MB | `@RESOURCES_pcloud/Graphics-Assets/` |
+
+#### Phase 2-C: Named C4D Auto-Saves Routed ✓ (503 files)
+| Destination | Files | Description |
+|---|---|---|
+| `@RESOURCES_pcloud/C4D-Scenes/` | 10 | WindowLightStudio × 10 auto-saves |
+| `@AREAS_pcloud/SJL-Brand/` | several | Files matching `sjl logo`, `sjl_logo`, `sjllogo`, `sjl socials` |
+| `@ARCHIVES_pcloud/C4D-Autosaves-Named/` | remainder | All other named project auto-saves + standalone .c4d files |
+
+#### Phase 2-D: `_Live (pCloud)` Dissolved ✓
+| Item | Moved To |
+|---|---|
+| `Automator` | `@ARCHIVES_pcloud/Mac-App-Backups/` |
+| `Backups` | `@ARCHIVES_pcloud/pCloud-Backups-2020s/` |
+| `Inspirational (pCloud)` | `@RESOURCES_pcloud/Inspirational/` |
+| `Love Lessons Memes` | `@AREAS_pcloud/Love-Lessons-Memes/` |
+| `Mom's Computer Backup 9-2020` | `@ARCHIVES_pcloud/Moms-Computer-Backup-2020/` |
+| `SJL LEARNING & Training Tutorials` | `@RESOURCES_pcloud/SJL-Learning-Tutorials/` |
+| `SJL Pics` | `@AREAS_pcloud/SJL-Photos/` |
+| `Stock Audio Library (pCloud)` | `@RESOURCES_pcloud/Stock-Audio-Library/` |
+| `.DS_Store` | Deleted |
+| `_Live (pCloud)` folder itself | Deleted (folder was empty after all moves) |
+
+> Note: `RESOURCES.dtBase2` had already been moved out of `_Live` in Phase 1. Not present when Phase 2 ran.
+
+#### Phase 2-E: `_Work (pCloud)` Dissolved ✓
+| Item | Moved To |
+|---|---|
+| `3D Graphic Assets` | `@RESOURCES_pcloud/3D-Assets/` |
+| `C4D Apps Scripts Plugins` | `@RESOURCES_pcloud/C4D-Plugins/` |
+| `FCPXBrushVecHelper.app` | `@ARCHIVES_pcloud/Mac-App-Backups/` |
+| `Four Page Portfolio Brochure (Indesign Template)` | `@RESOURCES_pcloud/Portfolio-Brochure-Template/` |
+| `FreeStoryboardTemplate` | `@RESOURCES_pcloud/Storyboard-Template/` |
+| `_Writing (pCloud)` | `@AREAS_pcloud/Writing/` |
+| `.DS_Store` | Deleted |
+| `_Work (pCloud)` folder itself | Deleted (folder was empty after all moves) |
+
+#### Phase 2-F: Uncharted Backup Folders ✓ / ⚠️
+| Folder | Action | Result |
+|---|---|---|
+| `pCloud Save` (id=27822996614) | → `@ARCHIVES_pcloud/pCloud-Save/` | ✓ Success |
+| `icloud drive backup 2025` (id=28826664033) | → `@ARCHIVES_pcloud/iCloud-Backup-2025/` | ✓ Success |
+| `pCloud Backup` (id=10614072655) | → `@ARCHIVES_pcloud/pCloud-Backup/` | ⚠️ **FAILED — error 2340** (name conflict: a `pCloud-Backup` folder likely already exists in @ARCHIVES) |
+
+**pCloud Backup next step:** Need to inspect @ARCHIVES contents to see if a `pCloud-Backup` folder already exists there. If yes, merge or use a different name like `pCloud-Backup-Root/`.
+
+#### Phase 2-G: Inventories (No Action Yet — Pending Shannon Decision)
+
+**SJL STUFF TO KEEP** (id=14440336710):
+- 1 subfolder, 0 files
+- Contains: `Trash It! 7.5` — a macOS application (Trash It! cleaner app backup)
+- **Decision needed:** This is a macOS app backup. Route to `@ARCHIVES_pcloud/Mac-App-Backups/` or delete?
+
+**SJL-MIGRATION-STAGING** (id=32149996212):
+- 17 folders, 0 files
+- Contains: 17 iDrive E2 server infrastructure staging directories:
+  `_SYSTEM`, `agent-data-e2`, `archives-idrive-e2`, `areas-idrive-e2`, `assets-e2`,
+  `bookstack-data-e2`, `graphics-media-e2`, `inbox-idrive-e2`, `n8n-backups-e2`,
+  `paperless-docs-e2`, `private-idrive-e2`, `projects-idrive-e2`, `quarantine-e2`,
+  `resources-idrive-e2`, `shannon-photos-e2`, `stacks-backups-e2`, `video-media-e2`
+- **Decision needed:** These are server migration staging folders (iDrive E2 structure). Options:
+  a) Leave in place — if actively used as migration staging
+  b) Move to `@PROJECTS_pcloud/SJL-Personal-Server_PROJECTS_pcloud/` as active infrastructure project
+  c) Move to `@ARCHIVES_pcloud/` if the migration is complete
 
 ---
 
@@ -420,13 +504,20 @@ These appear to be Cinema 4D application cache/config directories that pCloud sy
 14. ~~**Elephant `.M4V`**~~ — Stash app integration. Moved to `@AREAS_pcloud/Stash/`.
 15. ~~**UUID MP4 in @INBOX**~~ — Moved to `@PROJECTS_pcloud/UJC/UNREPORTED/` per Shannon.
 
+### Resolved in Phase 2 ✅ (2026-07-11)
+16. ~~**GI cache files**~~ — Deleted. 16 files (~81.5 MB) removed.
+17. ~~**UUID PSDs** (06c40886..., 27.3 MB + 25.3 MB)~~ — Moved to `@RESOURCES_pcloud/Graphics-Assets/`.
+18. ~~**Named C4D auto-saves at root** (503 files)~~ — Routed: WindowLightStudio → C4D-Scenes, SJL logo/socials → SJL-Brand, all others → C4D-Autosaves-Named.
+19. ~~**`_Live (pCloud)` folder**~~ — All 8 subfolders routed to PARA; folder deleted.
+20. ~~**`_Work (pCloud)` folder**~~ — All 6 subfolders routed to PARA; folder deleted.
+21. ~~**`pCloud Save`**~~ — Moved to `@ARCHIVES_pcloud/pCloud-Save/`.
+22. ~~**`icloud drive backup 2025`**~~ — Moved to `@ARCHIVES_pcloud/iCloud-Backup-2025/`.
+
 ### Still Open — Need Decisions
-- **GI cache files** (`Untitled 100000.gil`, `Untitled 200000.gir`, `.ao`, `.gi2` etc. — ~35 MB total) — Shannon suggested delete; not yet executed. Awaiting explicit confirm.
-- **`06c40886-be2f-4469-b866-8c030d5998a0_1.psd` (27.3 MB) and `06c40886...psd` (25.3 MB)** at root — UUID-named PSDs (likely downloaded assets). Route to `@RESOURCES_pcloud/Graphics-Assets/`?
-- **Named C4D auto-saves at root** (Bounce Back, CCC Logo, SJL logo, DFlat, Vegan Wars, etc.) — routing decisions needed per project.
-- **`_Live (pCloud)` and `_Work (pCloud)` folders** — still contain content (see Sections 7 & 8). Routing decisions needed before these non-standard folders can be dissolved.
-- **`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)** — route to `@RESOURCES_pcloud/Graphics-Assets/`?
-- **Large uncharted folders** — `pCloud Backup`, `pCloud Save`, `icloud drive backup 2025`, `SJL STUFF TO KEEP`, `SJL-MIGRATION-STAGING` — need recursive inventory before acting.
+- **`pCloud Backup`** (id=10614072655) — **Cannot be moved via API.** pCloud error 2340: "You can't move this folder outside its parent folder." This is a pCloud system-managed folder (created by pCloud Drive's Mac backup feature — contains 4 Mac device backups: "Mac Pro 2073", "Shannon's MacBook Pro 481", "ShannonJLove'sMacPro", "Shannon'sMacPro"). It is protected by pCloud and cannot be relocated. Decision needed: is Mac backup still active/needed? If yes, leave in place. If no, disable the backup feature in pCloud Drive settings and then the folder may become moveable.
+- **`SJL STUFF TO KEEP`** (id=14440336710) — Contains only `Trash It! 7.5` (macOS cleaner app backup). Route to `@ARCHIVES_pcloud/Mac-App-Backups/` or delete?
+- **`SJL-MIGRATION-STAGING`** (id=32149996212) — 17 iDrive E2 server infrastructure folders, 0 files. Leave in place (active staging), move to @PROJECTS as server project, or archive?
+- **`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)** — still at root. Route to `@RESOURCES_pcloud/Graphics-Assets/`?
 
 ---
 
