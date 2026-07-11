@@ -513,10 +513,14 @@ These appear to be Cinema 4D application cache/config directories that pCloud sy
 21. ~~**`pCloud Save`**~~ — Moved to `@ARCHIVES_pcloud/pCloud-Save/`.
 22. ~~**`icloud drive backup 2025`**~~ — Moved to `@ARCHIVES_pcloud/iCloud-Backup-2025/`.
 
-### Still Open — Need Decisions
-- **`pCloud Backup`** (id=10614072655) — **Cannot be moved via API.** pCloud error 2340: "You can't move this folder outside its parent folder." This is a pCloud system-managed folder (created by pCloud Drive's Mac backup feature — contains 4 Mac device backups: "Mac Pro 2073", "Shannon's MacBook Pro 481", "ShannonJLove'sMacPro", "Shannon'sMacPro"). It is protected by pCloud and cannot be relocated. Decision needed: is Mac backup still active/needed? If yes, leave in place. If no, disable the backup feature in pCloud Drive settings and then the folder may become moveable.
-- **`SJL STUFF TO KEEP`** (id=14440336710) — Contains only `Trash It! 7.5` (macOS cleaner app backup). Route to `@ARCHIVES_pcloud/Mac-App-Backups/` or delete?
-- **`SJL-MIGRATION-STAGING`** (id=32149996212) — 17 iDrive E2 server infrastructure folders, 0 files. Leave in place (active staging), move to @PROJECTS as server project, or archive?
+### Resolved — Phase 2 Wrap-up ✅ (2026-07-11)
+23. ~~**`SJL STUFF TO KEEP`**~~ — `Trash It! 7.5` moved to `@ARCHIVES_pcloud/Mac-App-Backups/`; empty wrapper folder deleted.
+
+### Permanent / Leave In Place (Shannon decision)
+- **`pCloud Backup`** (id=10614072655) — pCloud system-managed folder (Mac backup feature). Cannot be moved via API (error 2340: "You can't move this folder outside its parent folder."). Contains 4 Mac device backups. Shannon decision: **leave in place**.
+- **`SJL-MIGRATION-STAGING`** (id=32149996212) — 17 iDrive E2 server infrastructure folders (active staging area). Shannon decision: **leave in place**.
+
+### Still Open — Lower Priority
 - **`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)** — still at root. Route to `@RESOURCES_pcloud/Graphics-Assets/`?
 
 ---
