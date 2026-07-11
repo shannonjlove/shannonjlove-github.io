@@ -1,11 +1,66 @@
 # SJL pCloud Master Analysis
 **Generated:** 2026-06-29  
+**Updated:** 2026-07-11 (Phase 1 execution completed)  
 **Account:** shannonjlove@mac.com  
 **Token type:** Non-expiring pCloud access token  
 **Storage:** ~2.2 TB used  
-**Root item count:** 1,103 (files + folders)
+**Root item count:** 1,103 (files + folders) — reduced ~562 MB + 390 files from C4D auto-save deletion
 
 > **SAFETY RULE:** No file is deleted, renamed, or moved until Shannon reviews and approves this list section by section.
+
+---
+
+## COMPLETED OPERATIONS — 2026-07-11
+
+All operations below were approved by Shannon and executed via pCloud REST API. No file was deleted without explicit approval.
+
+### Phase 1 — PARA Folder Renames ✓ (5/5 complete)
+| Old Name | New Name |
+|---|---|
+| `_InBox To Be Sorted pCloud` | `@INBOX_pcloud` |
+| `_PROJECTS (pCloud)` | `@PROJECTS_pcloud` |
+| `_AREAS (pCloud)` | `@AREAS_pcloud` |
+| `_RESOURCES (pCloud)` | `@RESOURCES_pcloud` |
+| `_ARCHIVES (pCloud)` | `@ARCHIVES_pcloud` |
+
+### Phase 2 — Destination Subfolders Created ✓ (6/6)
+- `@ARCHIVES_pcloud/Rock-The-Bells_ARCHIVES_pcloud/`
+- `@ARCHIVES_pcloud/DW-SparseBUNDLE/`
+- `@ARCHIVES_pcloud/Unidentified-Video/`
+- `@ARCHIVES_pcloud/iDrive-Sync-Archive/`
+- `@RESOURCES_pcloud/Graphics-Assets/`
+- `@AREAS_pcloud/Stash/`
+
+### File & Folder Moves ✓ (10/10 complete)
+| Item | From | To |
+|---|---|---|
+| `81630.psd` (142.7 MB) | pCloud root | `@RESOURCES_pcloud/Graphics-Assets/` |
+| `397404c6...MP4` (57 MB) | `@INBOX_pcloud` | `@PROJECTS_pcloud/UJC/UNREPORTED/` |
+| Elephant `.M4V` (41 MB) | `@RESOURCES_pcloud` root | `@AREAS_pcloud/Stash/` |
+| `SOTS.library` | pCloud root | `@AREAS_pcloud/Stash/` |
+| `RTB_pCloud` folder | `@PROJECTS_pcloud` | `@ARCHIVES_pcloud/Rock-The-Bells_ARCHIVES_pcloud/` |
+| `SSC` folder | `@PROJECTS_pcloud` | `@ARCHIVES_pcloud/` |
+| `CHAZ` folder | `@PROJECTS_pcloud` | `@ARCHIVES_pcloud/` |
+| `DW.sparsebundle` | pCloud root | `@ARCHIVES_pcloud/DW-SparseBUNDLE/` |
+| `SJL WORK (iDrive Sync)` | pCloud root | `@ARCHIVES_pcloud/iDrive-Sync-Archive/` |
+| `RESOURCES.dtBase2` | `_Live (pCloud)` | `@RESOURCES_pcloud/` |
+
+> **IMG_8009.MOV (32.6 GB) and IMG_8010.MOV (22.9 GB):** Confirmed already located inside `@PROJECTS_pcloud/UJC/UNREPORTED/Terrance Hale/` — no move needed.
+
+### Deletions ✓
+| Item | Reason |
+|---|---|
+| `_BugReport.zip` | pCloud system bug report — Shannon approved |
+| `_BugReport.txt` | pCloud system bug report — Shannon approved |
+| `_Projects (pCloud) (3)` (empty collision folder) | pCloud sync conflict duplicate, confirmed empty |
+| **390 × `Untitled N@YYYYMMDD_HHMMSS`** C4D auto-saves | Unnamed C4D sessions — Shannon approved batch delete |
+
+**Storage freed from C4D deletion: 562 MB across 390 files.**
+
+### Stash App Note
+`SOTS.library` (FCPX library) and the elephant `.M4V` video are now in `@AREAS_pcloud/Stash/`. Configure your Stash app to point to `@AREAS_pcloud/Stash/` in pCloud to have these files appear in your Stash library.
+
+---
 
 ---
 
@@ -346,39 +401,32 @@ These appear to be Cinema 4D application cache/config directories that pCloud sy
 
 ---
 
-## SECTION 10 — QUESTIONS FOR SHANNON (BEFORE ANY CHANGES)
+## SECTION 10 — QUESTIONS FOR SHANNON (RESOLVED + OPEN)
 
-The following require your input before we can route or archive:
+### Resolved ✅
+1. ~~**IMG_8009.MOV / IMG_8010.MOV**~~ — Already in `@PROJECTS_pcloud/UJC/UNREPORTED/Terrance Hale/`. No action needed.
+2. ~~**`81630.psd`**~~ — Moved to `@RESOURCES_pcloud/Graphics-Assets/` per Shannon.
+3. ~~**`_Work/_Projects (pCloud) (3)`**~~ — Confirmed empty. Deleted.
+4. ~~**`DW.sparsebundle`**~~ — Archived to `@ARCHIVES_pcloud/DW-SparseBUNDLE/` per Shannon.
+5. ~~**`RTB_pCloud`**~~ — Rock The Bells. Archived to `@ARCHIVES_pcloud/Rock-The-Bells_ARCHIVES_pcloud/`.
+6. ~~**`SSC`**~~ — Archived to `@ARCHIVES_pcloud/` per Shannon.
+7. ~~**`CHAZ`**~~ — Archived to `@ARCHIVES_pcloud/` per Shannon.
+8. ~~**`UJC`**~~ — Active project. IMG_8009/8010 footage routed to `@PROJECTS_pcloud/UJC/UNREPORTED/`.
+9. ~~**`SJL WORK (iDrive Sync)`**~~ — Archived to `@ARCHIVES_pcloud/iDrive-Sync-Archive/` per Shannon.
+10. ~~**`SOTS.library`**~~ — Stash app integration. Moved to `@AREAS_pcloud/Stash/`.
+11. ~~**Bug reports**~~ — Deleted per Shannon.
+12. ~~**390 × Unnamed C4D auto-saves**~~ — Deleted per Shannon. 562 MB freed.
+13. ~~**`RESOURCES.dtBase2`**~~ — Moved to `@RESOURCES_pcloud/` per Shannon.
+14. ~~**Elephant `.M4V`**~~ — Stash app integration. Moved to `@AREAS_pcloud/Stash/`.
+15. ~~**UUID MP4 in @INBOX**~~ — Moved to `@PROJECTS_pcloud/UJC/UNREPORTED/` per Shannon.
 
-1. **IMG_8009.MOV (32.6 GB) and IMG_8010.MOV (22.9 GB)** in `_PROJECTS/` root — what event/shoot is this footage from? Which project do they belong to?
-
-2. **`81630.psd` (142.7 MB)** at pCloud root — what project is this for?
-
-3. **`_Work/_Projects (pCloud) (3)`** — pCloud renamed this folder because a collision occurred. What's in it? Should it be merged into @PROJECTS_pcloud?
-
-4. **`DW.sparsebundle`** at root — what is this encrypted disk image? It could be important data (DW = Disk Warrior? or Dropbox Wardrobe? or something else?).
-
-5. **`RTB_pCloud`** — what is RTB? What project?
-
-6. **`SSC`** — what is SSC?
-
-7. **`CHAZ`** — what project is CHAZ?
-
-8. **`UJC`** — what is UJC?
-
-9. **`SJL WORK (iDrive Sync)` (id=5801354350)** at root — is this an old iDrive backup that has since been migrated? Safe to archive?
-
-10. **`SOTS.library` (id=24275722290)** — FCP X library; what project is "SOTS"?
-
-11. **`_BugReport.zip` / `_BugReport.txt`** — are these pCloud bug reports you submitted? Safe to delete?
-
-12. **Cinema 4D unnamed autosaves** — the ~400 `Untitled N@YYYYMMDD_HHMMSS` files: do you want to review these before archiving, or batch-archive them all to `@ARCHIVES_pcloud/C4D-Autosaves-Unnamed-2024-2025/`?
-
-13. **`RESOURCES.dtBase2`** (DEVONthink database in _Live) — is this a backup of your DEVONthink RESOURCES database? Safe to move to @ARCHIVES_pcloud/DEVONthink-Backup/?
-
-14. **`elephant tramples...M4V` (41 MB) in _RESOURCES** — this appears to be a YouTube download that ended up in _RESOURCES. Delete or archive?
-
-15. **`397404c6-2cf6-4ea2-8951-410780c9b88f.MP4` (57 MB) in _InBox** — UUID filename means this was likely a pCloud share link download or auto-generated. Do you remember what video this is?
+### Still Open — Need Decisions
+- **GI cache files** (`Untitled 100000.gil`, `Untitled 200000.gir`, `.ao`, `.gi2` etc. — ~35 MB total) — Shannon suggested delete; not yet executed. Awaiting explicit confirm.
+- **`06c40886-be2f-4469-b866-8c030d5998a0_1.psd` (27.3 MB) and `06c40886...psd` (25.3 MB)** at root — UUID-named PSDs (likely downloaded assets). Route to `@RESOURCES_pcloud/Graphics-Assets/`?
+- **Named C4D auto-saves at root** (Bounce Back, CCC Logo, SJL logo, DFlat, Vegan Wars, etc.) — routing decisions needed per project.
+- **`_Live (pCloud)` and `_Work (pCloud)` folders** — still contain content (see Sections 7 & 8). Routing decisions needed before these non-standard folders can be dissolved.
+- **`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)** — route to `@RESOURCES_pcloud/Graphics-Assets/`?
+- **Large uncharted folders** — `pCloud Backup`, `pCloud Save`, `icloud drive backup 2025`, `SJL STUFF TO KEEP`, `SJL-MIGRATION-STAGING` — need recursive inventory before acting.
 
 ---
 
@@ -386,31 +434,37 @@ The following require your input before we can route or archive:
 
 Once Shannon approves, changes execute in this order (no file deleted until all moves confirmed):
 
-### Phase 1 — Rename PARA buckets (5 renames, no content moved)
-1. `_InBox To Be Sorted pCloud` → `@INBOX_pcloud`
-2. `_PROJECTS (pCloud)` → `@PROJECTS_pcloud`
-3. `_AREAS (pCloud)` → `@AREAS_pcloud`
-4. `_RESOURCES (pCloud)` → `@RESOURCES_pcloud`
-5. `_ARCHIVES (pCloud)` → `@ARCHIVES_pcloud`
+### Phase 1 — Rename PARA buckets ✅ COMPLETE (2026-07-11)
+1. ~~`_InBox To Be Sorted pCloud`~~ → `@INBOX_pcloud` ✓
+2. ~~`_PROJECTS (pCloud)`~~ → `@PROJECTS_pcloud` ✓
+3. ~~`_AREAS (pCloud)`~~ → `@AREAS_pcloud` ✓
+4. ~~`_RESOURCES (pCloud)`~~ → `@RESOURCES_pcloud` ✓
+5. ~~`_ARCHIVES (pCloud)`~~ → `@ARCHIVES_pcloud` ✓
 
-### Phase 2 — Create missing standard subfolders
-- `@ARCHIVES_pcloud/C4D-Autosaves-Named-2024/` — for named project C4D auto-saves
-- `@ARCHIVES_pcloud/C4D-Autosaves-Unnamed-2024-2025/` — for ~400 Untitled@ files
-- `@ARCHIVES_pcloud/Mac-App-Backups/` — for app bundles
-- `@ARCHIVES_pcloud/C4D-System-Cache-2025/` — for C4D system dirs
-- `@RESOURCES_pcloud/Graphics-Assets/` — for design files
-- `@RESOURCES_pcloud/C4D-Scenes/` — for reusable C4D scenes
+### Phase 2 — Create missing standard subfolders ✅ PARTIALLY COMPLETE (2026-07-11)
+- ✓ `@ARCHIVES_pcloud/Rock-The-Bells_ARCHIVES_pcloud/` — created
+- ✓ `@ARCHIVES_pcloud/DW-SparseBUNDLE/` — created
+- ✓ `@ARCHIVES_pcloud/Unidentified-Video/` — created
+- ✓ `@ARCHIVES_pcloud/iDrive-Sync-Archive/` — created
+- ✓ `@RESOURCES_pcloud/Graphics-Assets/` — created
+- ✓ `@AREAS_pcloud/Stash/` — created
+- `@ARCHIVES_pcloud/C4D-Autosaves-Named-2024/` — still needed
+- `@ARCHIVES_pcloud/Mac-App-Backups/` — still needed
+- `@ARCHIVES_pcloud/C4D-System-Cache-2025/` — still needed
+- `@RESOURCES_pcloud/C4D-Scenes/` — still needed
 
-### Phase 3 — Delete junk (zero-risk files)
-- All `.DS_Store` files (7+ instances)
-- `Cinema C4D Files Presets Plugins (Archive Files 2023).dmg.sb-87997749-3zgpJi` (macOS temp sandbox dir)
-- `StudioBinder: Call Sheet.pdf.sb-ae8b0766-LUF0bL` (macOS temp sandbox dir — not a real folder)
-- All C4D GI render cache files (`.ao`, `.gi`, `.gi2`, `.gil`, `.gir`) — these have no standalone value
-- `_BugReport.zip` and `_BugReport.txt` (pending confirmation from Shannon)
+### Phase 3 — Delete junk (zero-risk files) ✅ PARTIALLY COMPLETE (2026-07-11)
+- ✓ `_BugReport.zip` — deleted
+- ✓ `_BugReport.txt` — deleted
+- ✓ `_Projects (pCloud) (3)` — empty collision folder deleted
+- All `.DS_Store` files (7+ instances) — still pending
+- `Cinema C4D Files Presets Plugins (Archive Files 2023).dmg.sb-87997749-3zgpJi` — still pending
+- `StudioBinder: Call Sheet.pdf.sb-ae8b0766-LUF0bL` — still pending
+- All C4D GI render cache files (`.ao`, `.gi`, `.gi2`, `.gil`, `.gir`) — still pending
 
-### Phase 4 — Batch-archive C4D auto-saves
-- Move all `Untitled N@YYYYMMDD_HHMMSS` files → `@ARCHIVES_pcloud/C4D-Autosaves-Unnamed-2024-2025/`
-- Move named project auto-saves → appropriate `@PROJECTS_pcloud/[ProjectFolder]/C4D-Autosaves/`
+### Phase 4 — Batch C4D auto-saves ✅ PARTIALLY COMPLETE (2026-07-11)
+- ✓ **390 × `Untitled N@YYYYMMDD_HHMMSS` files DELETED** — 562 MB freed (Shannon approved delete, not archive)
+- Named project auto-saves (Bounce Back, CCC Logo, DFlat, SJL logo, etc.) — still pending; need routing decisions per project
 
 ### Phase 5 — Route design files at root
 - Move PSD/PNG design files → `@RESOURCES_pcloud/Graphics-Assets/`
@@ -446,5 +500,5 @@ These folders need their own recursive listing before we can act on them:
 
 ---
 
-*This document was generated by Claude Code from the pCloud API. No changes have been made.*  
-*All recommended actions require Shannon's explicit approval before execution.*
+*Phase 1 operations executed 2026-07-11. All changes were approved by Shannon before execution.*  
+*All future actions require Shannon's explicit approval before execution. No file is deleted without review.*
