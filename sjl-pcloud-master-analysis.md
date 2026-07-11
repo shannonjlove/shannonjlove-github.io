@@ -520,8 +520,8 @@ These appear to be Cinema 4D application cache/config directories that pCloud sy
 - **`pCloud Backup`** (id=10614072655) — pCloud system-managed folder (Mac backup feature). Cannot be moved via API (error 2340: "You can't move this folder outside its parent folder."). Contains 4 Mac device backups. Shannon decision: **leave in place**.
 - **`SJL-MIGRATION-STAGING`** (id=32149996212) — 17 iDrive E2 server infrastructure folders (active staging area). Shannon decision: **leave in place**.
 
-### Still Open — Lower Priority
-- **`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)** — still at root. Route to `@RESOURCES_pcloud/Graphics-Assets/`?
+### Resolved ✅
+24. ~~**`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)**~~ — Both moved to `@RESOURCES_pcloud/Graphics-Assets/`. Note: the `-Recovered` version may be a duplicate — review and delete if the main copy is clean.
 
 ---
 
