@@ -601,19 +601,21 @@ All 7 batches executed with 100% success. Root reduced to 14 folders / 1 file.
 30. ~~**Batch 6 — Tools → @RESOURCES**~~ — `Creative Cloud Libraries` → `Creative-Cloud-Libraries`, `CVToolbox Plugins` → `FCPX-Plugins`, `Graphic & Design tutorials` → `Design-Tutorials`, `Motion Templates` → `Motion-Templates`. Created `C4D-Plugins` subfolder (id=21859934392); moved `light_stroke_intro.zip` and `GSG TRANSFORM.zip` into it. `Stock Video Files.library` renamed `Stock-Video-Library` → `@RESOURCES_pcloud/`; `STOCK VIDEOS LIBRARY.library` nested inside `Stock-Video-Library/`.
 31. ~~**Batch 7 — Archives + delete**~~ — `Backups` folder → `@ARCHIVES_pcloud/` (as-is). `Cinema C4D Files Presets Plugins (Archive Files 2023)` renamed `Cinema-C4D-Archive-2023` → `@ARCHIVES_pcloud/`. `Scrivener Copied Items 9-2-18` renamed `Scrivener-2018` → `@ARCHIVES_pcloud/`. `Terron Austin Concert FCPX Files.fcpbundle` (id=18048039310) recursively deleted per Shannon.
 
-### Open — Awaiting Shannon Decision (Phase 4)
-These 7 items remain at pCloud root. No action until Shannon approves.
+### Resolved in Phase 4 ✅ (2026-07-12)
+32. ~~**B: `Company Brochure`** (18626866689)~~ — moved to `@RESOURCES_pcloud/Graphics-Assets/` per Shannon.
+33. ~~**C: `Love Family Portrait`** (19890121053)~~ — moved to `@ARCHIVES_pcloud/`.
+34. ~~**D: `SJL Reel Clip Category Excerpts`** (24164186635)~~ — moved to `@ARCHIVES_pcloud/`.
+35. ~~**E: `MoviePrints from reel`** (20813303784)~~ — moved to `@ARCHIVES_pcloud/` alongside D.
+36. ~~**F: `Computer & Technology`** (26383084016, root)~~ — was **empty**; deleted. Canonical copy lives in `@AREAS_pcloud/Computer & Technology_pCloud/` (id=10342939641).
+37. ~~**H: `outline-blank-transparent-world-map-b1b.png`** (70678388805)~~ — moved to `@RESOURCES_pcloud/Graphics-Assets/`.
 
-| # | Folder/File | id | Options |
-|---|---|---|---|
-| A | `Install macOS Ventura.app` | 19859048699 | Delete (~12 GB recovered) OR archive to `@ARCHIVES_pcloud/Mac-App-Backups/` |
-| B | `Company Brochure` | 18626866689 | Which project? Active → `@PROJECTS_pcloud/` OR archive |
-| C | `Love Family Portrait` | 19890121053 | `@AREAS_pcloud/family_pcloud/` (ongoing) OR `@ARCHIVES_pcloud/` |
-| D | `SJL Reel Clip Category Excerpts` | 24164186635 | `@ARCHIVES_pcloud/SJL-Reel-Resume-2023/` OR still active? |
-| E | `MoviePrints from reel` | 20813303784 | Same as D — archive with reel project |
-| F | `Computer & Technology` | 26383084016 | Merge into `@AREAS_pcloud/Computer-Technology_pcloud/` (already exists there) |
-| G | `File Attributes SJL` | 29469767945 | Inspect contents first — what is this? |
-| H | `outline-blank-transparent-world-map-b1b.png` | 70678388805 | 112.9 KB PNG at root — → `@RESOURCES_pcloud/Graphics-Assets/`? |
+**Root after Phase 4:** 9 folders, 0 files (5 PARA + pCloud Backup + SJL-MIGRATION-STAGING + 2 pending)
+
+### Open — Awaiting Shannon Decision (Phase 5)
+| # | Item | id | Inspection / Notes | Options |
+|---|---|---|---|---|
+| A | `Install macOS Ventura.app` | 19859048699 | macOS 13 installer app (~12 GB) | **Delete** (recover 12 GB) OR archive to `Mac-App-Backups/` |
+| G | `File Attributes SJL` | 29469767945 | 41 PNG screenshots from 2025-12-24 Christmas Eve (7:28 AM–7:51 PM session) — file attribute documentation/testing screenshots, ~3 MB total | `@AREAS_pcloud/SJL-Brand/` · `@RESOURCES_pcloud/` · `@ARCHIVES_pcloud/` · or delete |
 
 ---
 
@@ -651,15 +653,18 @@ Once Shannon approves, changes execute in this order (no file deleted until all 
 
 **Root state after Phase 3:** 14 folders / 1 file (5 PARA buckets + pCloud Backup + SJL-MIGRATION-STAGING + 7 items awaiting Phase 4 decision)
 
-### Phase 4 — Resolve remaining root items (PENDING Shannon decision)
+### Phase 4 — Root cleanup continuation ✅ COMPLETE (2026-07-12)
+- ✓ `Company Brochure` → `@RESOURCES_pcloud/Graphics-Assets/`
+- ✓ `Love Family Portrait` → `@ARCHIVES_pcloud/`
+- ✓ `SJL Reel Clip Category Excerpts` → `@ARCHIVES_pcloud/`
+- ✓ `MoviePrints from reel` → `@ARCHIVES_pcloud/`
+- ✓ `Computer & Technology` (root, empty) → deleted; @AREAS canonical copy intact
+- ✓ `outline-blank-transparent-world-map-b1b.png` → `@RESOURCES_pcloud/Graphics-Assets/`
+- **Root: 9 folders, 0 files**
+
+### Phase 5 — Final 2 root items (PENDING Shannon decision)
 - `Install macOS Ventura.app` (id=19859048699) — delete or archive?
-- `Company Brochure` (id=18626866689) — which project?
-- `Love Family Portrait` (id=19890121053) — @AREAS or @ARCHIVES?
-- `SJL Reel Clip Category Excerpts` (id=24164186635) — archive or active?
-- `MoviePrints from reel` (id=20813303784) — archive with reel?
-- `Computer & Technology` (id=26383084016) — merge into @AREAS?
-- `File Attributes SJL` (id=29469767945) — inspect first
-- `outline-blank-transparent-world-map-b1b.png` (70678388805, 112.9 KB) — → Graphics-Assets?
+- `File Attributes SJL` (id=29469767945) — 41 Christmas Eve 2025 screenshots; where to route?
 
 ### Phase 5 — @PROJECTS cleanup (future)
 - Rename all project subfolders to SJL convention
