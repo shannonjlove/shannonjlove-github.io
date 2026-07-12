@@ -1,10 +1,10 @@
 # SJL pCloud Master Analysis
 **Generated:** 2026-06-29  
-**Updated:** 2026-07-11 (Phase 2 execution completed)  
+**Updated:** 2026-07-12 (Phase 3 execution completed)  
 **Account:** shannonjlove@mac.com  
 **Token type:** Non-expiring pCloud access token  
 **Storage:** ~2.2 TB used  
-**Root item count:** significantly reduced — ~643 MB freed + 900+ files/folders routed or deleted across Phase 1 & 2
+**Root item count:** 14 folders, 1 file — down from 62 folders / 118 files before Phase 3
 
 > **SAFETY RULE:** No file is deleted, renamed, or moved until Shannon reviews and approves this list section by section.
 
@@ -145,6 +145,73 @@ All items below were approved by Shannon (answers: "1. yes / 2. yes / 3. ok / 4.
   c) Move to `@ARCHIVES_pcloud/` if the migration is complete
 
 ---
+
+---
+
+### Phase 3 — Root Cleanup (2026-07-12) ✓ — 100% success, all 7 batches
+
+All operations approved by Shannon ("batch 1 keep 4d files presets dmg but delete tmp files... batch 7 keep presets, scrivener items, delete terron austin concert") and executed via pCloud REST API.
+
+#### Batch 1 — Junk/cache/tmp deletion ✓
+| Item | Result |
+|---|---|
+| `.DS_Store` (72329370917) | Deleted |
+| `updatelist` (70172492733) | Deleted |
+| `_trigger.txt` (70251809831) | Deleted |
+| `symbolcache` (70172605919) | Deleted |
+| `databaseid` (70172492795) | Deleted |
+| `cache1` + 2 conflicted copies | Deleted (3 files) |
+| `directorycache` + 5 conflicted copies | Deleted (6 files) |
+| `.sb-87997749-3zgpJi` sandbox temp folder (18646943716) | Recursively deleted |
+| 74 × `net.maxon.*.bin` module registry files | Deleted (74/74) |
+
+#### Batch 2 — C4D System Cache Archive ✓
+- Created `@ARCHIVES_pcloud/C4D-System-Cache-2025/` (id=32330803465)
+- 32 C4D system folders moved in (01252025 prefs, 2dec64cb, browser, builtinrepository, cache, featurehighlighting, GorillaCam, GSG TRANSFORM, Gumroad HDRI Pack, hair, HDRI Link 1.05 ZIP, layout, libs, light_stroke_intro, materialpreview, materials_*, maxon_generated, plugins, rm, schemes, scripts, sketch, Spiralator and Gridify, SuperText, Trailer Text Effect, Transform, Transform C4D Broadcast Version, Umami v1.2, users, utilities_*, xgroup, xnode)
+- `Cinema 4D.prf`, `template.prf`, `template.l4d` moved in
+- `Cinema4D-21.026_Mac_Fullinstaller copy.dmg` (268 MB) kept and moved in per Shannon
+
+#### Batch 2 (graphics) — Graphics-Assets ✓
+All 14 files → `@RESOURCES_pcloud/Graphics-Assets/` (14/14 ✓):
+`Orange stroke.psd` (67.1 MB) · `ce6cdda6...psd` (26.1 MB) · `Cracked Coal Normal.png` (19.3 MB) · `black background.png` (11.4 MB) · `v878-mind-47 copy.psd` (9.2 MB) · 2 vecteezy PNGs (6.4 + 6.3 MB) · `Brush stroke5.png` (5.1 MB) · `Earth map .png` (804 KB) · `brush_stroke.png` (383 KB) · `Steel_Prepared_D.jpg` (370 KB) · `Bumpy_Plastic_DIFF.jpg` (264 KB) · `Brush stroke7@2x.png` (16.6 KB) · `brush_stroke6.png` (3.0 KB)
+
+#### Batch 4 — Getty Images ✓
+- `Getty Images Files June 10 2025` (27726075812) renamed `Getty-Images-2025` → `@RESOURCES_pcloud/`
+- 9 loose Getty images collected from root into `Getty-Images-2025/` (total ~178 MB)
+
+#### Batch 5 — Mac App Bundles ✓
+All 4 → `@ARCHIVES_pcloud/Mac-App-Backups/` (32313437862):
+`AirServer 2.app` (20005487062) · `AirServer.app` (20005486020) · `Alfred workflows` (24088968938) · `Adobe` → renamed `Adobe-AppSupport` (20043757780)
+
+#### Batch 6 — Tools → @RESOURCES ✓
+| Folder | Renamed To | Result |
+|---|---|---|
+| `Creative Cloud Libraries` | `Creative-Cloud-Libraries` | ✓ → @RESOURCES |
+| `CVToolbox Plugins` | `FCPX-Plugins` | ✓ → @RESOURCES |
+| `Graphic & Design tutorials` | `Design-Tutorials` | ✓ → @RESOURCES |
+| `Motion Templates` | `Motion-Templates` | ✓ → @RESOURCES |
+| Created `C4D-Plugins/` (id=21859934392) | — | ✓ in @RESOURCES |
+| `light_stroke_intro.zip` (57853055158) | — | ✓ → C4D-Plugins/ |
+| `GSG TRANSFORM.zip` (70172918197) | — | ✓ → C4D-Plugins/ |
+| `Stock Video Files.library` | `Stock-Video-Library` | ✓ → @RESOURCES |
+| `STOCK VIDEOS LIBRARY.library` (12721937564) | — | ✓ → Stock-Video-Library/ (nested) |
+
+#### Batch 7 — Archives + Terron delete ✓
+| Item | Action | Result |
+|---|---|---|
+| `Backups` (29644739219) | → `@ARCHIVES_pcloud/` as-is | ✓ |
+| `Cinema C4D Files Presets Plugins (Archive Files 2023)` (19931395021) | → `@ARCHIVES_pcloud/Cinema-C4D-Archive-2023/` | ✓ |
+| `Scrivener Copied Items 9-2-18` (14410451018) | → `@ARCHIVES_pcloud/Scrivener-2018/` | ✓ |
+| `Terron Austin Concert FCPX Files.fcpbundle` (18048039310) | **Recursively deleted** per Shannon | ✓ |
+
+**Root after Phase 3 (2026-07-12):**
+```
+14 folders:  @ARCHIVES_pcloud, @AREAS_pcloud, @INBOX_pcloud, @PROJECTS_pcloud, @RESOURCES_pcloud,
+             Company Brochure, Computer & Technology, File Attributes SJL,
+             Install macOS Ventura.app, Love Family Portrait, MoviePrints from reel,
+             pCloud Backup, SJL Reel Clip Category Excerpts, SJL-MIGRATION-STAGING
+1 file:      outline-blank-transparent-world-map-b1b.png (112.9 KB)
+```
 
 ---
 
@@ -523,6 +590,31 @@ These appear to be Cinema 4D application cache/config directories that pCloud sy
 ### Resolved ✅
 24. ~~**`vecteezy_yellow-acrylic...psd` (70.4 MB) and recovered version (33.7 MB)**~~ — Both moved to `@RESOURCES_pcloud/Graphics-Assets/`. Note: the `-Recovered` version may be a duplicate — review and delete if the main copy is clean.
 
+### Resolved in Phase 3 ✅ (2026-07-12)
+All 7 batches executed with 100% success. Root reduced to 14 folders / 1 file.
+
+25. ~~**Batch 1 — Junk/cache/tmp deletion**~~ — 14 junk files deleted (.DS_Store, updatelist, _trigger.txt, symbolcache, databaseid, cache1 ×3, directorycache ×5); sandbox temp folder `.sb-87997749-3zgpJi` recursively deleted; 74 net.maxon.*.bin module registry files deleted.
+26. ~~**Batch 2 — C4D system folders**~~ — All 32 C4D system cache/config folders archived to `@ARCHIVES_pcloud/C4D-System-Cache-2025/` (id=32330803465). C4D pref files (`Cinema 4D.prf`, `template.prf`, `template.l4d`) archived with them. `Cinema4D-21.026_Mac_Fullinstaller copy.dmg` (268 MB) kept per Shannon, archived to same folder.
+27. ~~**Batch 2 (graphics) — 14 graphics files → Graphics-Assets**~~ — All 14 files (Orange stroke.psd 67.1 MB, ce6cdda6 PSD 26.1 MB, Cracked Coal Normal.png 19.3 MB, black background.png 11.4 MB, v878-mind-47 copy.psd 9.2 MB, 2× vecteezy PNGs, Brush stroke5.png, Earth map.png, brush_stroke.png, Steel_Prepared_D.jpg, Bumpy_Plastic_DIFF.jpg, Brush stroke7@2x.png, brush_stroke6.png) → `@RESOURCES_pcloud/Graphics-Assets/`.
+28. ~~**Batch 4 — Getty Images**~~ — `Getty Images Files June 10 2025` folder (id=27726075812) renamed to `Getty-Images-2025` and moved to `@RESOURCES_pcloud/`. 9 loose Getty image files from root moved into it (Seamless Denim Background 33.7 MB, GettyImages-1629042166 26.8 MB, GettyImages-114283115 25.9 MB, GettyImages-878198966 25.6 MB, GettyImages-1981623172 18.0 MB, GettyImages-1405961965 14.8 MB, GettyImages-1529576564 14.3 MB, GettyImages-1416809594 12.8 MB, GettyImages-1295865290 5.3 MB).
+29. ~~**Batch 5 — Mac app bundles**~~ — `AirServer 2.app`, `AirServer.app`, `Alfred workflows` → `@ARCHIVES_pcloud/Mac-App-Backups/`. `Adobe` folder renamed `Adobe-AppSupport` and moved to `@ARCHIVES_pcloud/Mac-App-Backups/`.
+30. ~~**Batch 6 — Tools → @RESOURCES**~~ — `Creative Cloud Libraries` → `Creative-Cloud-Libraries`, `CVToolbox Plugins` → `FCPX-Plugins`, `Graphic & Design tutorials` → `Design-Tutorials`, `Motion Templates` → `Motion-Templates`. Created `C4D-Plugins` subfolder (id=21859934392); moved `light_stroke_intro.zip` and `GSG TRANSFORM.zip` into it. `Stock Video Files.library` renamed `Stock-Video-Library` → `@RESOURCES_pcloud/`; `STOCK VIDEOS LIBRARY.library` nested inside `Stock-Video-Library/`.
+31. ~~**Batch 7 — Archives + delete**~~ — `Backups` folder → `@ARCHIVES_pcloud/` (as-is). `Cinema C4D Files Presets Plugins (Archive Files 2023)` renamed `Cinema-C4D-Archive-2023` → `@ARCHIVES_pcloud/`. `Scrivener Copied Items 9-2-18` renamed `Scrivener-2018` → `@ARCHIVES_pcloud/`. `Terron Austin Concert FCPX Files.fcpbundle` (id=18048039310) recursively deleted per Shannon.
+
+### Open — Awaiting Shannon Decision (Phase 4)
+These 7 items remain at pCloud root. No action until Shannon approves.
+
+| # | Folder/File | id | Options |
+|---|---|---|---|
+| A | `Install macOS Ventura.app` | 19859048699 | Delete (~12 GB recovered) OR archive to `@ARCHIVES_pcloud/Mac-App-Backups/` |
+| B | `Company Brochure` | 18626866689 | Which project? Active → `@PROJECTS_pcloud/` OR archive |
+| C | `Love Family Portrait` | 19890121053 | `@AREAS_pcloud/family_pcloud/` (ongoing) OR `@ARCHIVES_pcloud/` |
+| D | `SJL Reel Clip Category Excerpts` | 24164186635 | `@ARCHIVES_pcloud/SJL-Reel-Resume-2023/` OR still active? |
+| E | `MoviePrints from reel` | 20813303784 | Same as D — archive with reel project |
+| F | `Computer & Technology` | 26383084016 | Merge into `@AREAS_pcloud/Computer-Technology_pcloud/` (already exists there) |
+| G | `File Attributes SJL` | 29469767945 | Inspect contents first — what is this? |
+| H | `outline-blank-transparent-world-map-b1b.png` | 70678388805 | 112.9 KB PNG at root — → `@RESOURCES_pcloud/Graphics-Assets/`? |
+
 ---
 
 ## SECTION 11 — RECOMMENDED EXECUTION ORDER
@@ -548,37 +640,31 @@ Once Shannon approves, changes execute in this order (no file deleted until all 
 - `@ARCHIVES_pcloud/C4D-System-Cache-2025/` — still needed
 - `@RESOURCES_pcloud/C4D-Scenes/` — still needed
 
-### Phase 3 — Delete junk (zero-risk files) ✅ PARTIALLY COMPLETE (2026-07-11)
-- ✓ `_BugReport.zip` — deleted
-- ✓ `_BugReport.txt` — deleted
-- ✓ `_Projects (pCloud) (3)` — empty collision folder deleted
-- All `.DS_Store` files (7+ instances) — still pending
-- `Cinema C4D Files Presets Plugins (Archive Files 2023).dmg.sb-87997749-3zgpJi` — still pending
-- `StudioBinder: Call Sheet.pdf.sb-ae8b0766-LUF0bL` — still pending
-- All C4D GI render cache files (`.ao`, `.gi`, `.gi2`, `.gil`, `.gir`) — still pending
+### Phase 3 — Root Cleanup ✅ COMPLETE (2026-07-12)
+- ✓ **Batch 1:** 14 junk files deleted + sandbox temp folder + 74 net.maxon.*.bin files
+- ✓ **Batch 2:** 32 C4D system folders → `@ARCHIVES_pcloud/C4D-System-Cache-2025/`; 3 C4D pref files + DMG → same archive
+- ✓ **Batch 2 (graphics):** 14 graphics files → `@RESOURCES_pcloud/Graphics-Assets/`
+- ✓ **Batch 4:** Getty folder renamed `Getty-Images-2025` → `@RESOURCES_pcloud/`; 9 Getty images collected inside
+- ✓ **Batch 5:** AirServer 2.app, AirServer.app, Alfred workflows, Adobe-AppSupport → `@ARCHIVES_pcloud/Mac-App-Backups/`
+- ✓ **Batch 6:** Creative-Cloud-Libraries, FCPX-Plugins, Design-Tutorials, Motion-Templates, C4D-Plugins/, Stock-Video-Library (nested) → `@RESOURCES_pcloud/`
+- ✓ **Batch 7:** Backups, Cinema-C4D-Archive-2023, Scrivener-2018 → `@ARCHIVES_pcloud/`; Terron Austin Concert FCPX bundle deleted
 
-### Phase 4 — Batch C4D auto-saves ✅ PARTIALLY COMPLETE (2026-07-11)
-- ✓ **390 × `Untitled N@YYYYMMDD_HHMMSS` files DELETED** — 562 MB freed (Shannon approved delete, not archive)
-- Named project auto-saves (Bounce Back, CCC Logo, DFlat, SJL logo, etc.) — still pending; need routing decisions per project
+**Root state after Phase 3:** 14 folders / 1 file (5 PARA buckets + pCloud Backup + SJL-MIGRATION-STAGING + 7 items awaiting Phase 4 decision)
 
-### Phase 5 — Route design files at root
-- Move PSD/PNG design files → `@RESOURCES_pcloud/Graphics-Assets/`
-- Route app bundles → `@ARCHIVES_pcloud/Mac-App-Backups/`
+### Phase 4 — Resolve remaining root items (PENDING Shannon decision)
+- `Install macOS Ventura.app` (id=19859048699) — delete or archive?
+- `Company Brochure` (id=18626866689) — which project?
+- `Love Family Portrait` (id=19890121053) — @AREAS or @ARCHIVES?
+- `SJL Reel Clip Category Excerpts` (id=24164186635) — archive or active?
+- `MoviePrints from reel` (id=20813303784) — archive with reel?
+- `Computer & Technology` (id=26383084016) — merge into @AREAS?
+- `File Attributes SJL` (id=29469767945) — inspect first
+- `outline-blank-transparent-world-map-b1b.png` (70678388805, 112.9 KB) — → Graphics-Assets?
 
-### Phase 6 — Route C4D system dirs
-- Batch-move all C4D system dirs (IDs: 24711905...) → `@ARCHIVES_pcloud/C4D-System-Cache-2025/`
-
-### Phase 7 — Dissolve _Live and _Work
-- Route each subfolder to correct PARA bucket per Section 7 and 8 above
-- Delete the now-empty _Live and _Work folders
-
-### Phase 8 — Route remaining root folders
-- Per Section 2D above, route each named folder to correct PARA bucket
-
-### Phase 9 — Resolve _PROJECTS questions
-- Route IMG_8009 and IMG_8010 after identification
+### Phase 5 — @PROJECTS cleanup (future)
 - Rename all project subfolders to SJL convention
-- Archive completed projects
+- Archive completed projects (Bounce Back, DFlat DEvans, etc.)
+- Resolve NYPD Grinch nested subfolder
 
 ---
 
