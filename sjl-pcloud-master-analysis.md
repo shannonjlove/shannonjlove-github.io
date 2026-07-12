@@ -1,10 +1,10 @@
 # SJL pCloud Master Analysis
 **Generated:** 2026-06-29  
-**Updated:** 2026-07-12 (Phase 3 execution completed)  
+**Updated:** 2026-07-12 (Phase 5 complete — root cleanup DONE)  
 **Account:** shannonjlove@mac.com  
 **Token type:** Non-expiring pCloud access token  
 **Storage:** ~2.2 TB used  
-**Root item count:** 14 folders, 1 file — down from 62 folders / 118 files before Phase 3
+**Root item count:** 7 folders, 0 files — down from 62 folders / 118 files before Phase 3
 
 > **SAFETY RULE:** No file is deleted, renamed, or moved until Shannon reviews and approves this list section by section.
 
@@ -611,11 +611,24 @@ All 7 batches executed with 100% success. Root reduced to 14 folders / 1 file.
 
 **Root after Phase 4:** 9 folders, 0 files (5 PARA + pCloud Backup + SJL-MIGRATION-STAGING + 2 pending)
 
-### Open — Awaiting Shannon Decision (Phase 5)
-| # | Item | id | Inspection / Notes | Options |
-|---|---|---|---|---|
-| A | `Install macOS Ventura.app` | 19859048699 | macOS 13 installer app (~12 GB) | **Delete** (recover 12 GB) OR archive to `Mac-App-Backups/` |
-| G | `File Attributes SJL` | 29469767945 | 41 PNG screenshots from 2025-12-24 Christmas Eve (7:28 AM–7:51 PM session) — file attribute documentation/testing screenshots, ~3 MB total | `@AREAS_pcloud/SJL-Brand/` · `@RESOURCES_pcloud/` · `@ARCHIVES_pcloud/` · or delete |
+### Resolved in Phase 5 ✅ (2026-07-12)
+| # | Item | id | Action |
+|---|---|---|---|
+| A | `Install macOS Ventura.app` | 19859048699 | **Recursively deleted** (~12 GB recovered) per Shannon ("A delere") |
+| G | `File Attributes SJL` | 29469767945 | Renamed `File-Attributes-Reference`, moved to `@AREAS_pcloud/` per Shannon — contains 41 PNG screenshots (Dec 24 2025 session) + `Tags_metadata.pdf` to be manually uploaded by Shannon |
+
+**Root after Phase 5: 7 folders, 0 files — pCloud root cleanup COMPLETE ✅**
+```
+[10248193524]  @ARCHIVES_pcloud
+[10248188025]  @AREAS_pcloud
+[21145763113]  @INBOX_pcloud
+[10248185073]  @PROJECTS_pcloud
+[10248190794]  @RESOURCES_pcloud
+[10614072655]  pCloud Backup          ← system-protected (error 2340), leave in place
+[32149996212]  SJL-MIGRATION-STAGING  ← active iDrive E2 staging, leave in place
+```
+
+> **Manual action needed:** Shannon to upload `Tags_metadata.pdf` directly to `@AREAS_pcloud/File-Attributes-Reference/` in pCloud. The 41 screenshots are already there; the PDF completes the reference folder.
 
 ---
 
@@ -651,7 +664,7 @@ Once Shannon approves, changes execute in this order (no file deleted until all 
 - ✓ **Batch 6:** Creative-Cloud-Libraries, FCPX-Plugins, Design-Tutorials, Motion-Templates, C4D-Plugins/, Stock-Video-Library (nested) → `@RESOURCES_pcloud/`
 - ✓ **Batch 7:** Backups, Cinema-C4D-Archive-2023, Scrivener-2018 → `@ARCHIVES_pcloud/`; Terron Austin Concert FCPX bundle deleted
 
-**Root state after Phase 3:** 14 folders / 1 file (5 PARA buckets + pCloud Backup + SJL-MIGRATION-STAGING + 7 items awaiting Phase 4 decision)
+**Root state after Phase 3:** 14 folders / 1 file → Phase 4 → 9 folders / 0 files → Phase 5 → **7 folders / 0 files ✅ COMPLETE**
 
 ### Phase 4 — Root cleanup continuation ✅ COMPLETE (2026-07-12)
 - ✓ `Company Brochure` → `@RESOURCES_pcloud/Graphics-Assets/`
@@ -662,9 +675,11 @@ Once Shannon approves, changes execute in this order (no file deleted until all 
 - ✓ `outline-blank-transparent-world-map-b1b.png` → `@RESOURCES_pcloud/Graphics-Assets/`
 - **Root: 9 folders, 0 files**
 
-### Phase 5 — Final 2 root items (PENDING Shannon decision)
-- `Install macOS Ventura.app` (id=19859048699) — delete or archive?
-- `File Attributes SJL` (id=29469767945) — 41 Christmas Eve 2025 screenshots; where to route?
+### Phase 5 — Final 2 root items ✅ COMPLETE (2026-07-12)
+- ✓ `Install macOS Ventura.app` (id=19859048699) — **recursively deleted** (~12 GB recovered)
+- ✓ `File Attributes SJL` (id=29469767945) — renamed `File-Attributes-Reference` → `@AREAS_pcloud/`
+- **Root: 7 folders, 0 files — DONE**
+- ⬜ Manual: Shannon to upload `Tags_metadata.pdf` to `@AREAS_pcloud/File-Attributes-Reference/`
 
 ### Phase 5 — @PROJECTS cleanup (future)
 - Rename all project subfolders to SJL convention
