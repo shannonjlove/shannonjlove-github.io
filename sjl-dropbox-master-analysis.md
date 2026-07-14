@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-12 (infrastructure ready — awaiting token to run audit)  
+**Updated:** 2026-07-14 (personal account root mapped via MCP — awaiting fresh token to audit contents)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -12,10 +12,14 @@
 
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
-| Personal (`dropbox`) | ⬜ Pending token | ⬜ | ⬜ | ⬜ |
-| Business (`dropbox-biz`) | ⬜ Pending token | ⬜ | ⬜ | ⬜ |
+| Personal (`dropbox`) | ⬜ Need fresh token | 🔶 Root structure confirmed | ⬜ | ⬜ |
+| Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
 
-**To unlock:** Provide a Dropbox access token (or reconnect Dropbox MCP connector) for each account. See token instructions below.
+**Personal account connected 2026-07-14 via MCP.** Account confirmed: `shannonjlove@mac.com`, team "LoveYOU".  
+Root has **2 mounts** (see Root Inventory below). Needs a fresh App Console token to list folder contents.  
+**Provided tokens** — "Maestraal Code" rejected as invalid; rclone tokens expired (4-hr lifetime, June 2026).
+
+**To unlock full audit:** Generate a fresh token from the Dropbox App Console (Option A below).
 
 ---
 
@@ -87,29 +91,39 @@
 
 *Will be filled in once token is provided and audit runs.*
 
-### Personal Account — Root Folders
+### Personal Account — Root Mounts (confirmed 2026-07-14 via MCP)
+
+> This is a **Dropbox Business / Teams** account. The true root contains **namespace mounts**, not raw folders.  
+> Personal files live inside `Shannon J. Love (DPBXpro)/` — that is the member folder to audit.
+
+| Name | Type | Path | Recommended Action |
+|---|---|---|---|
+| `LoveYOU Team Folder` | Team folder mount | `ns:14579923699//LoveYOU Team Folder` | Leave in place — shared team namespace |
+| `Shannon J. Love (DPBXpro)` | Member folder mount | `ns:14579923699//Shannon J. Love (DPBXpro)` | **Audit this folder** — personal files live here |
+
+### Personal Account — `Shannon J. Love (DPBXpro)/` Contents
 
 | Name | Items | Size | Recommended Action |
 |---|---|---|---|
-| *(audit pending)* | | | |
+| *(contents pending fresh token)* | | | |
 
 ### Personal Account — Root Files
 
 | Name | Size | Recommended Action |
 |---|---|---|
-| *(audit pending)* | | |
+| *(audit pending fresh token)* | | |
 
 ### Business Account — Root Folders
 
 | Name | Items | Size | Recommended Action |
 |---|---|---|---|
-| *(audit pending)* | | | |
+| *(audit pending — need dropbox-biz token)* | | | |
 
 ### Business Account — Root Files
 
 | Name | Size | Recommended Action |
 |---|---|---|
-| *(audit pending)* | | |
+| *(audit pending — need dropbox-biz token)* | | |
 
 ---
 
