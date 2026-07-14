@@ -194,7 +194,7 @@
 
 - [ ] **G1** Verify Podman is installed and rootless for `sjl` user
   ```bash
-  podman --version && podman info | grep -i rootless
+  podman --version && podman info --format '{{.Host.Security.Rootless}}'
   ```
 - [ ] **G2** Verify `/opt/secrets` exists and is root-only (`chmod 700`)
 - [ ] **G3** Confirm listening ports are free: 8001 (TagBot), 2342 (PhotoPrism), 8000 (Paperless), 3000 (SJL Hub), 11434 (Ollama)

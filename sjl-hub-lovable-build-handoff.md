@@ -585,7 +585,9 @@ CREATE TABLE graph_edges (
   source_docid    TEXT,
   target_docid    TEXT,
   edge_type       TEXT,               -- file-hub | sibling | webpage-pdf | file-folder | change | mirror
-  created         TEXT
+  created         TEXT,
+  FOREIGN KEY(source_docid) REFERENCES files(docid) ON DELETE CASCADE,
+  FOREIGN KEY(target_docid) REFERENCES files(docid) ON DELETE CASCADE
 );
 ```
 
@@ -743,7 +745,7 @@ After=network-online.target
 
 [Container]
 Image=localhost/sjl-hub:latest
-PublishPort=3000:3000
+PublishPort=127.0.0.1:3000:3000
 Volume=/home/sjl/data/sjl-hub:/app/data:Z
 Environment=DATABASE_PATH=/app/data/hub.db
 Environment=HOOKVAULT_SECRET_FILE=/run/secrets/hookvault_secret
