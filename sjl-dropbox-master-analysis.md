@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-17 (PARA renames 4/5 ✅; junk + 6 empty root folders deleted; AREAS rename in progress)  
+**Updated:** 2026-07-17 (PARA renames 5/5 ✅; junk + 6 empty root folders deleted)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -12,12 +12,12 @@
 
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
-| Personal (`dropbox`) | 🔶 4/5 renamed ✅ · `@AREAS_dropbox` rename in progress | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | 🔶 In progress — junk + 6 empty folders deleted; routing to PARA next | ⬜ |
+| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | 🔶 In progress — junk + 6 empty folders deleted; routing to PARA next | ⬜ |
 | Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
 
 **Personal account audited 2026-07-14.** Account: `shannonjlove@mac.com`, team "LoveYOU", member folder `Shannon J. Love (DPBXpro)`.  
 Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETED OPERATIONS).  
-**Current state (2026-07-17):** 4 of 5 PARA renames done; `@AREAS_dropbox` rename running against 2.74 TB folder; 22 non-PARA root folders remain to be routed.
+**Current state (2026-07-17):** All 5 PARA renames complete. 22 non-PARA root folders remain to be routed. Next: nested empty folder scan + dedup check + routing batch.
 
 **To get business account token:** Generate a fresh token from the Dropbox App Console (Option A below) using the business account login.
 
@@ -47,7 +47,7 @@ Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETE
 |---|---|---|
 | `@INBOX_dropbox` | ✅ Renamed 2026-07-17 | Was `@INBOX_DRPBX_SJL` |
 | `@PROJECTS_dropbox` | ✅ Renamed 2026-07-17 | Was `=PROJECTS_DRPBX_SJL___Folder_2022-03-18_1023_` — 1023 items |
-| `@AREAS_dropbox` | 🔶 Rename in progress (op `APDTUX-tVe1H…`) | Was `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` — 2.74 TB, slow rename |
+| `@AREAS_dropbox` | ✅ Renamed 2026-07-17 | Was `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` — 2.74 TB, completed after ~20 min |
 | `@RESOURCES_dropbox` | ✅ Renamed 2026-07-17 | Was `=RESOURCES_DRPBX_SJL___Folder_2022-03-13_601_` — 601 items |
 | `@ARCHIVES_dropbox` | ✅ Renamed 2026-07-17 | Was `=ARCHIVES_DRPBX_SJL___Folder_2022-03-15_1000_` — 1000 items |
 
@@ -206,7 +206,7 @@ Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETE
 | Rename | `=PROJECTS_DRPBX_SJL___Folder_2022-03-18_1023_` | `@PROJECTS_dropbox` | ✅ Complete |
 | Rename | `=RESOURCES_DRPBX_SJL___Folder_2022-03-13_601_` | `@RESOURCES_dropbox` | ✅ Complete |
 | Rename | `=ARCHIVES_DRPBX_SJL___Folder_2022-03-15_1000_` | `@ARCHIVES_dropbox` | ✅ Complete |
-| Rename | `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` (2.74 TB) | `@AREAS_dropbox` | 🔶 In progress (op `APDTUX-tVe1H…`) |
+| Rename | `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` (2.74 TB) | `@AREAS_dropbox` | ✅ Complete (confirmed via metadata) |
 
 ### 2026-07-17 — Junk Deletions (Personal Account Root)
 
@@ -244,8 +244,7 @@ All confirmed empty before deletion (verified with `max_results=600` returning `
   - [x] `@PROJECTS_dropbox` ✅
   - [x] `@RESOURCES_dropbox` ✅
   - [x] `@ARCHIVES_dropbox` ✅
-  - [ ] `@AREAS_dropbox` 🔶 rename in progress (2.74 TB folder — slow Dropbox operation)
-- [ ] **Confirm `@AREAS_dropbox` rename completed** — poll op `APDTUX-tVe1H…` or verify via metadata
+  - [x] `@AREAS_dropbox` ✅ confirmed via metadata 2026-07-17
 - [ ] **Inspect contents of PARA folders** (now accessible under new names):
   - `@PROJECTS_dropbox` (1023 items — review before routing anything in)
   - `@ARCHIVES_dropbox` (1000 items)
