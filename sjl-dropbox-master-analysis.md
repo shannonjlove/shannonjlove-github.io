@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-14 (personal account root fully audited — 33 folders / 4 files inventoried)  
+**Updated:** 2026-07-17 (PARA renames 4/5 ✅; junk + 6 empty root folders deleted; AREAS rename in progress)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -12,12 +12,12 @@
 
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
-| Personal (`dropbox`) | 🔶 Old-format PARA exists — needs rename | ✅ Complete — 33 folders / 4 files | ⬜ Awaiting Shannon review | ⬜ |
+| Personal (`dropbox`) | 🔶 4/5 renamed ✅ · `@AREAS_dropbox` rename in progress | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | 🔶 In progress — junk + 6 empty folders deleted; routing to PARA next | ⬜ |
 | Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
 
 **Personal account audited 2026-07-14.** Account: `shannonjlove@mac.com`, team "LoveYOU", member folder `Shannon J. Love (DPBXpro)`.  
-Root has 33 folders and 4 files — full inventory below. Old PARA folders exist with `=DRPBX_SJL` naming (non-standard); none match the target `@INBOX_dropbox` / `@PROJECTS_dropbox` etc. names.  
-**Next step:** Shannon reviews inventory → approve PARA rename plan → execute.
+Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETED OPERATIONS).  
+**Current state (2026-07-17):** 4 of 5 PARA renames done; `@AREAS_dropbox` rename running against 2.74 TB folder; 22 non-PARA root folders remain to be routed.
 
 **To get business account token:** Generate a fresh token from the Dropbox App Console (Option A below) using the business account login.
 
@@ -45,11 +45,11 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 ### Personal Account (`dropbox`)
 | Folder | Status | Note |
 |---|---|---|
-| `@INBOX_dropbox` | 🔶 Create new + migrate from `@INBOX_DRPBX_SJL` | Old folder exists with wrong suffix |
-| `@PROJECTS_dropbox` | 🔶 Create new + migrate from `=PROJECTS_DRPBX_SJL___Folder_2022-03-18_1023_` | 1023 items — review contents first |
-| `@AREAS_dropbox` | 🔶 Create new + migrate from `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` | 219 items |
-| `@RESOURCES_dropbox` | 🔶 Create new + migrate from `=RESOURCES_DRPBX_SJL___Folder_2022-03-13_601_` | 601 items |
-| `@ARCHIVES_dropbox` | 🔶 Create new + migrate from `=ARCHIVES_DRPBX_SJL___Folder_2022-03-15_1000_` | 1000 items — largest, review first |
+| `@INBOX_dropbox` | ✅ Renamed 2026-07-17 | Was `@INBOX_DRPBX_SJL` |
+| `@PROJECTS_dropbox` | ✅ Renamed 2026-07-17 | Was `=PROJECTS_DRPBX_SJL___Folder_2022-03-18_1023_` — 1023 items |
+| `@AREAS_dropbox` | 🔶 Rename in progress (op `APDTUX-tVe1H…`) | Was `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` — 2.74 TB, slow rename |
+| `@RESOURCES_dropbox` | ✅ Renamed 2026-07-17 | Was `=RESOURCES_DRPBX_SJL___Folder_2022-03-13_601_` — 601 items |
+| `@ARCHIVES_dropbox` | ✅ Renamed 2026-07-17 | Was `=ARCHIVES_DRPBX_SJL___Folder_2022-03-15_1000_` — 1000 items |
 
 ### Business Account (`dropbox-biz`)
 | Folder | Status |
@@ -120,11 +120,11 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 
 | Name | Recommended PARA Route | Notes |
 |---|---|---|
-| `DEVans Dflat Music` | `@PROJECTS_dropbox/DFlat-DEvans-Music_PROJECTS_dropbox/` | Also exists in gDrive — cross-cloud-mirror candidate |
+| ~~`DEVans Dflat Music`~~ | ~~`@PROJECTS_dropbox/DFlat-DEvans-Music_PROJECTS_dropbox/`~~ | **🗑️ Deleted 2026-07-17 — was empty.** Also exists in gDrive — cross-cloud-mirror confirmed |
 | `Mel LAG` | `@PROJECTS_dropbox/` or `@ARCHIVES_dropbox/` | Unclear — Shannon to identify |
 | `Movie Magic` | `@RESOURCES_dropbox/` | Screenwriting software files / templates |
 | `Movies (DVDs)` | `@ARCHIVES_dropbox/` | DVD rips / backups — archive |
-| `Wake Up BGVS & ISO Parts` | `@PROJECTS_dropbox/` or `@ARCHIVES_dropbox/` | Audio/music project parts — Shannon to confirm active vs. archived |
+| ~~`Wake Up BGVS & ISO Parts`~~ | ~~`@PROJECTS_dropbox/` or `@ARCHIVES_dropbox/`~~ | **🗑️ Deleted 2026-07-17 — was empty** |
 
 #### System / App Backup Folders
 
@@ -134,7 +134,7 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 | `Air Video Server HD.app` | `@ARCHIVES_dropbox/` | Old iOS streaming app |
 | `Apps` | `@ARCHIVES_dropbox/` | General app backups — review contents before archiving |
 | `CheatSheet.app` | `@ARCHIVES_dropbox/` | Old macOS utility |
-| `Corkulous App` | `@ARCHIVES_dropbox/` | Discontinued iOS app |
+| ~~`Corkulous App`~~ | ~~`@ARCHIVES_dropbox/`~~ | **🗑️ Deleted 2026-07-17 — was empty** |
 | `Tags.app` | `@RESOURCES_dropbox/` | macOS tagging app — keep if still using (paired with `.tags_and_ratings.plist`) |
 | `TP Blackboxes` | `@RESOURCES_dropbox/` or `@ARCHIVES_dropbox/` | Likely Motion/FCP templates — Shannon to identify |
 
@@ -151,8 +151,8 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 
 | Name | Recommended PARA Route | Notes |
 |---|---|---|
-| `01162024 Dropbox unsorted` | `@INBOX_dropbox/` | Jan 16, 2024 batch — route to INBOX for processing |
-| `07112024` | `@INBOX_dropbox/` | Jul 11, 2024 batch — route to INBOX for processing |
+| ~~`01162024 Dropbox unsorted`~~ | ~~`@INBOX_dropbox/`~~ | **🗑️ Deleted 2026-07-17 — was empty** |
+| ~~`07112024`~~ | ~~`@INBOX_dropbox/`~~ | **🗑️ Deleted 2026-07-17 — was empty** |
 | `TO BE SORTED___Folder_2022-03-30_1240_` | `@INBOX_dropbox/` | 2022 "to be sorted" pile — likely the oldest backlog |
 
 #### General / Miscellaneous Folders
@@ -165,20 +165,20 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 | `SJL Folder` | Inspect | General SJL catch-all — inspect before routing |
 | `_WORK (Dropbox)` | Inspect | Work files — Shannon to classify to PARA |
 | `Send and track` | `@ARCHIVES_dropbox/` | Dropbox "Send and Track" shared links folder — legacy feature |
-| `Vault` | `@AREAS_dropbox/` | Likely secure personal docs — Shannon to confirm |
+| ~~`Vault`~~ | ~~`@AREAS_dropbox/`~~ | **🗑️ Deleted 2026-07-17 — was empty** |
 
 #### Hidden / System Folders (safe to delete after review)
 
 | Name | Recommended Action | Notes |
 |---|---|---|
-| `.Keka-279B2E5E-20C4-43FF-B543-FBFE1E6A8421` | Delete | Keka (archive app) temp folder — stale, safe to remove |
+| ~~`.Keka-279B2E5E-20C4-43FF-B543-FBFE1E6A8421`~~ | ~~Delete~~ | **🗑️ Deleted 2026-07-17** — Keka temp folder confirmed empty |
 
-### Personal Account — Root Files (4 files)
+### Personal Account — Root Files (2 remain; 2 deleted)
 
 | Name | Size | Recommended Action |
 |---|---|---|
-| `._Dear Evan Hansen.mp4` | 4.0 KB | Delete — macOS AppleDouble metadata file (not the actual video) |
-| `._StellarVolumeOptimizer.dmg` | 4.0 KB | Delete — macOS AppleDouble metadata file |
+| ~~`._Dear Evan Hansen.mp4`~~ | ~~4.0 KB~~ | **🗑️ Deleted 2026-07-17** — macOS AppleDouble metadata file |
+| ~~`._StellarVolumeOptimizer.dmg`~~ | ~~4.0 KB~~ | **🗑️ Deleted 2026-07-17** — macOS AppleDouble metadata file |
 | `.tags_and_ratings.plist` | 110.2 MB | Keep with `Tags.app` folder if still using, or delete if switching to Raindrop/SJL tagging |
 | `InDesign_20_LS20.dmg` | 1.4 GB | Move to `@RESOURCES_dropbox/` or delete if Adobe CC subscription already handles this |
 
@@ -198,7 +198,36 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 
 ## COMPLETED OPERATIONS
 
-*(None yet — awaiting audit)*
+### 2026-07-17 — PARA Renames (Personal Account)
+
+| Operation | Source | Target | Status |
+|---|---|---|---|
+| Rename | `@INBOX_DRPBX_SJL` | `@INBOX_dropbox` | ✅ Complete |
+| Rename | `=PROJECTS_DRPBX_SJL___Folder_2022-03-18_1023_` | `@PROJECTS_dropbox` | ✅ Complete |
+| Rename | `=RESOURCES_DRPBX_SJL___Folder_2022-03-13_601_` | `@RESOURCES_dropbox` | ✅ Complete |
+| Rename | `=ARCHIVES_DRPBX_SJL___Folder_2022-03-15_1000_` | `@ARCHIVES_dropbox` | ✅ Complete |
+| Rename | `=AREAS_DRPBX_SJL___Folder_2022-03-27_219_` (2.74 TB) | `@AREAS_dropbox` | 🔶 In progress (op `APDTUX-tVe1H…`) |
+
+### 2026-07-17 — Junk Deletions (Personal Account Root)
+
+| Item | Type | Reason |
+|---|---|---|
+| `.Keka-279B2E5E-20C4-43FF-B543-FBFE1E6A8421` | Folder | Keka archive app temp folder — confirmed empty |
+| `._Dear Evan Hansen.mp4` | File (4 KB) | macOS AppleDouble metadata stub — not the actual video |
+| `._StellarVolumeOptimizer.dmg` | File (4 KB) | macOS AppleDouble metadata stub |
+
+### 2026-07-17 — Empty Folder Deletions (Personal Account Root)
+
+All confirmed empty before deletion (verified with `max_results=600` returning `entries:[], has_more:false`).
+
+| Folder | Notes |
+|---|---|
+| `Corkulous App` | Discontinued iOS app — empty |
+| `Vault` | Was listed as personal docs candidate — empty |
+| `Wake Up BGVS & ISO Parts` | Audio project folder — empty |
+| `01162024 Dropbox unsorted` | Jan 2024 batch folder — empty |
+| `07112024` | Jul 2024 batch folder — empty |
+| `DEVans Dflat Music` | Also exists in gDrive (cross-cloud mirror) — empty in Dropbox |
 
 ---
 
@@ -207,16 +236,28 @@ Root has 33 folders and 4 files — full inventory below. Old PARA folders exist
 ### Phase 4-A — Personal account PARA setup 🔶 IN PROGRESS
 - [x] Run audit: `python3 dropbox-audit.py --token TOKEN_PERSONAL --account personal` — **complete 2026-07-14**
 - [x] Generate root inventory — **33 folders / 4 files documented above**
-- [ ] **Shannon reviews Root Inventory above** — approve recommended actions section by section
-- [ ] **Inspect contents of old PARA folders** (especially the large ones):
-  - `=PROJECTS_DRPBX_SJL___Folder_2022-03-18_1023_` (1023 items)
-  - `=ARCHIVES_DRPBX_SJL___Folder_2022-03-15_1000_` (1000 items)
-  - `=RESOURCES_DRPBX_SJL___Folder_2022-03-13_601_` (601 items)
-- [ ] **Create new PARA folders** (dry run → Shannon approves → execute):
-  - `@INBOX_dropbox`, `@PROJECTS_dropbox`, `@AREAS_dropbox`, `@RESOURCES_dropbox`, `@ARCHIVES_dropbox`
-- [ ] **Migrate contents** from old `=DRPBX_SJL` folders into new `@*_dropbox` folders
-- [ ] **Route non-PARA root items** to PARA (Shannon approves each batch per Root Inventory table)
-- [ ] **Delete / trash** confirmed safe items: `.Keka-*` folder, `._*` AppleDouble files
+- [x] Shannon reviews Root Inventory — **approved section by section**
+- [x] Delete confirmed junk: `.Keka-*`, `._Dear Evan Hansen.mp4`, `._StellarVolumeOptimizer.dmg` — **complete 2026-07-17**
+- [x] Delete all empty root folders (6 deleted) — **complete 2026-07-17**
+- [x] **Rename PARA folders** (4 of 5 done):
+  - [x] `@INBOX_dropbox` ✅
+  - [x] `@PROJECTS_dropbox` ✅
+  - [x] `@RESOURCES_dropbox` ✅
+  - [x] `@ARCHIVES_dropbox` ✅
+  - [ ] `@AREAS_dropbox` 🔶 rename in progress (2.74 TB folder — slow Dropbox operation)
+- [ ] **Confirm `@AREAS_dropbox` rename completed** — poll op `APDTUX-tVe1H…` or verify via metadata
+- [ ] **Inspect contents of PARA folders** (now accessible under new names):
+  - `@PROJECTS_dropbox` (1023 items — review before routing anything in)
+  - `@ARCHIVES_dropbox` (1000 items)
+  - `@RESOURCES_dropbox` (601 items)
+  - `@AREAS_dropbox` (219 items)
+- [ ] **Scan for empty nested folders** inside each of the 22 remaining non-PARA root folders
+- [ ] **Identify duplicates** across the drive — surface list for Shannon before deleting
+- [ ] **Route non-PARA root items** to PARA (Shannon approves each batch):
+  - `TO BE SORTED___Folder_2022-03-30_1240_` → `@INBOX_dropbox/`
+  - `InDesign_20_LS20.dmg` → `@RESOURCES_dropbox/` or delete
+  - `.tags_and_ratings.plist` → keep or delete (Shannon decides)
+  - 19 other root folders → see Root Inventory tables above
 
 ### Phase 4-B — Business account PARA setup ⬜ PENDING
 - [ ] Run audit: `python3 dropbox-audit.py --token TOKEN_BIZ --account biz`
