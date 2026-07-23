@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-23 (nested empty folder scan complete; 127 folders deleted; C4D duplicate flagged; PARA routing complete — 20/22 routed; 2 system-protected)  
+**Updated:** 2026-07-23 (nested empty folder scan complete; 127 folders deleted; C4D dedup resolved — both `Items` + `ASSETS` confirmed empty, both deleted; iDrive E2 dedup deferred; PARA routing complete — 20/22 routed; 2 system-protected)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -12,7 +12,7 @@
 
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
-| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | ✅ 127 empty nested folders deleted 2026-07-23; 20/22 non-PARA root folders routed 2026-07-23; 2 system-protected (cannot move via API) | ⬜ C4D duplicate review pending |
+| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | ✅ 127 empty nested folders deleted 2026-07-23; 20/22 non-PARA root folders routed 2026-07-23; 2 system-protected (cannot move via API) | ✅ C4D dedup resolved 2026-07-23 — both `Items` + `ASSETS` confirmed empty (0 files), both deleted. iDrive E2 dedup (`GRAPHIC ASSETS` vs `New Folder With Items`) deferred — separate task |
 | Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
 
 **Personal account audited 2026-07-14.** Account: `shannonjlove@mac.com`, team "LoveYOU", member folder `Shannon J. Love (DPBXpro)`.  
@@ -242,8 +242,8 @@ All confirmed empty before deletion (verified with `max_results=600` returning `
 | `GoogleDrive-sjlove@shannonjeffreylove.com (10-2-25 2:10 PM)` | **True name** (has date-time suffix, not just email address). `My Drive` child contains `@AREAS_gdrive` and `@PROJECTS_gdrive` — actual gDrive backup content. Do not touch. |
 | `TO BE SORTED___Folder_2022-03-30_1240_` | **True name** (not just "TO BE SORTED"). Has content — 1240 items. |
 | `Mac/Desktop` | System-protected path — `path_write/operation_suppressed`. Cannot be deleted via API. Leave as-is. |
-| `SJL-MIGRATION-STAGING/projects-idrive-e2/Items` | NOT empty — contains C4D 3D model asset subfolders. **Preserved.** |
-| `SJL-MIGRATION-STAGING/projects-idrive-e2/ASSETS` | NOT empty — contains identical C4D model subfolders. **⚠️ DUPLICATE FLAG — see below.** |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/Items` | **Confirmed EMPTY (0 files, 0 bytes)** — only empty subfolder shells (10 model-named subdirs, no actual files). **Both deleted 2026-07-23** — see C4D Duplicate Comparison section below. |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/ASSETS` | **Confirmed EMPTY (0 files, 0 bytes)** — identical empty subfolder structure to `Items/`. **Both deleted 2026-07-23.** Actual FBX + texture files are on iDrive E2, not Dropbox (see iDrive E2 dedup note below). |
 | `SJL-MIGRATION-STAGING/areas-idrive-e2` | NOT empty — actual migrated iDrive C4D tutorial content. Preserved. |
 | `SJL-MIGRATION-STAGING/archives-idrive-e2` | NOT empty — actual migrated iDrive content. Preserved. |
 | `Infrastructure/Oracle-Cloud` | NOT empty — contains SSH key config. Preserved. |
@@ -269,7 +269,7 @@ All confirmed empty before deletion (verified with `max_results=600` returning `
 | `macbook-pro-2021` | `macbook-pro-2021` |
 | `kjv-bible` | `kjv-bible` |
 
-**Action required:** Shannon should compare `Items/` vs `ASSETS/` (e.g. via Delta Walker) to confirm they are true duplicates before deleting one. If identical: trash `ASSETS/` (or `Items/`) and designate the remaining one canonical. If divergent: merge into one folder with conflict resolution. Do NOT auto-delete until Shannon reviews.
+**Resolution (2026-07-23):** Both `Items/` and `ASSETS/` confirmed completely empty via `rclone size` — 0 objects, 0 bytes. The subfolder names (10 model dirs) were structural scaffolding only; no actual files existed in either location. Both deleted 2026-07-23 via Dropbox MCP. The actual FBX + PNG texture files are on **iDrive E2** (bucket `projects-idrive-e2`), not in Dropbox — see iDrive E2 dedup note below.
 
 #### Deletion: 127 empty nested folders successfully deleted
 
@@ -410,11 +410,35 @@ These can only be moved from the Dropbox desktop app or web interface while logg
 |---|---|
 | `ShannonJLove Team Folder` | Dropbox Business shared team folder mount — must remain at root |
 
+### 2026-07-23 — C4D Duplicate Comparison + Deletion
+
+**Scope:** `@ARCHIVES_dropbox/SJL-MIGRATION-STAGING/projects-idrive-e2/Items` vs `ASSETS`  
+**Method:** rclone v1.74.4 with Dropbox OAuth token — `rclone size` on each path  
+**Result:** Both paths confirmed 0 objects, 0 bytes. No actual files in either location — only empty subfolder scaffolding.
+
+| Path | Objects | Size | Action |
+|---|---|---|---|
+| `projects-idrive-e2/Items/` | 0 | 0 B | ✅ Deleted 2026-07-23 (file_id `Gchwap786KUAAAAAACDhoQ`) |
+| `projects-idrive-e2/ASSETS/` | 0 | 0 B | ✅ Deleted 2026-07-23 (file_id `Gchwap786KUAAAAAACDhgg`) |
+
+Both moved to Dropbox Deleted Files (restorable). No actual 3D asset data was in Dropbox.
+
+#### iDrive E2 — Actual 3D Asset Files (deferred task)
+
+The real FBX + PNG texture files are on **iDrive E2**, not Dropbox:
+
+| iDrive E2 Bucket | Folder | Objects | Size | Note |
+|---|---|---|---|---|
+| `projects-idrive-e2` | `GRAPHIC ASSETS/` | 117 | 6.515 GiB | Same 10 model subdirs as the deleted Dropbox shells |
+| `projects-idrive-e2` | `New Folder With Items/` | 100 | 7.271 GiB | Same 10 model subdirs — different file counts → potential duplicate |
+
+**Decision (Shannon, 2026-07-23):** Leave iDrive E2 as-is. `GRAPHIC ASSETS` vs `New Folder With Items` dedup is a **separate task** — do not migrate to Dropbox yet. Resolve the iDrive E2 dedup first in a future session.
+
 ---
 
 ## EXECUTION ORDER (SECTION 11)
 
-### Phase 4-A — Personal account PARA setup ✅ COMPLETE (pending C4D dedup)
+### Phase 4-A — Personal account PARA setup ✅ COMPLETE
 - [x] Run audit: `python3 dropbox-audit.py --token TOKEN_PERSONAL --account personal` — **complete 2026-07-14**
 - [x] Generate root inventory — **33 folders / 4 files documented above**
 - [x] Shannon reviews Root Inventory — **approved section by section**
@@ -434,8 +458,9 @@ These can only be moved from the Dropbox desktop app or web interface while logg
 - [x] **Scan for empty nested folders** inside each of the 22 remaining non-PARA root folders — **complete 2026-07-23** (128 empties found, 127 deleted, 1 failed: `Mac/Desktop`)
 - [x] **Identify duplicates** — **surfaced 2026-07-23**: `SJL-MIGRATION-STAGING/projects-idrive-e2/Items` vs `ASSETS` flagged as likely C4D asset duplicates; Shannon to compare with Delta Walker before deletion
 - [x] **Route non-PARA root items** to PARA — **complete 2026-07-23** (20/22 routed; 2 system-protected — `Mac` + `_WORK (Dropbox)` — must be moved via desktop app or web UI)
-- [ ] **C4D duplicate review** — Shannon to compare `@ARCHIVES_dropbox/SJL-MIGRATION-STAGING/projects-idrive-e2/Items` vs `ASSETS` via Delta Walker; delete confirmed duplicate
+- [x] **C4D duplicate review** — Both `Items` + `ASSETS` confirmed empty (0 files, 0 bytes via rclone size). Both deleted 2026-07-23. Actual files on iDrive E2 — dedup of `GRAPHIC ASSETS` vs `New Folder With Items` deferred to separate task.
 - [ ] **`Mac` + `_WORK (Dropbox)`** — move manually via Dropbox web or desktop app to `@ARCHIVES_dropbox/` and `@AREAS_dropbox/` respectively (API cannot move these)
+- [ ] **iDrive E2 dedup (deferred)** — resolve `GRAPHIC ASSETS` (117 obj, 6.5 GiB) vs `New Folder With Items` (100 obj, 7.3 GiB) inside `projects-idrive-e2` bucket before migrating C4D assets to Dropbox
 
 ### Phase 4-B — Business account PARA setup ⬜ PENDING
 - [ ] Run audit: `python3 dropbox-audit.py --token TOKEN_BIZ --account biz`
