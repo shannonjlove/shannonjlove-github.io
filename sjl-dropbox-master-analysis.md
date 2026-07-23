@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-17 (PARA renames 5/5 ✅; junk + 6 empty root folders deleted)  
+**Updated:** 2026-07-23 (nested empty folder scan complete; 127 folders deleted; C4D duplicate flagged; routing pending)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -12,12 +12,12 @@
 
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
-| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | 🔶 In progress — junk + 6 empty folders deleted; routing to PARA next | ⬜ |
+| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | 🔶 In progress — 127 empty nested folders deleted 2026-07-23; C4D duplicate flagged; routing to PARA next | ⬜ |
 | Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
 
 **Personal account audited 2026-07-14.** Account: `shannonjlove@mac.com`, team "LoveYOU", member folder `Shannon J. Love (DPBXpro)`.  
 Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETED OPERATIONS).  
-**Current state (2026-07-17):** All 5 PARA renames complete. 22 non-PARA root folders remain to be routed. Next: nested empty folder scan + dedup check + routing batch.
+**Current state (2026-07-23):** All 5 PARA renames complete. Full nested empty-folder scan complete across all 22 non-PARA root folders — 128 empties identified, 127 deleted, 1 failed (`Mac/Desktop` — system-protected). 22 non-PARA root folders remain to be routed. See COMPLETED OPERATIONS — 2026-07-23 for full log.
 
 **To get business account token:** Generate a fresh token from the Dropbox App Console (Option A below) using the business account login.
 
@@ -229,6 +229,141 @@ All confirmed empty before deletion (verified with `max_results=600` returning `
 | `07112024` | Jul 2024 batch folder — empty |
 | `DEVans Dflat Music` | Also exists in gDrive (cross-cloud mirror) — empty in Dropbox |
 
+### 2026-07-23 — Full Nested Empty Folder Scan + Batch Deletion (Personal Account)
+
+**Scope:** All 22 non-PARA root folders scanned recursively for empty sub-folders.  
+**Shannon approval:** Blanket approval given — "delete all empty folders you come across within the entire drive please."  
+**Result:** 128 empty folders identified. 127 deleted (moved to Dropbox Deleted Files). 1 failed.
+
+#### Discovery notes
+
+| Folder | Finding |
+|---|---|
+| `GoogleDrive-sjlove@shannonjeffreylove.com (10-2-25 2:10 PM)` | **True name** (has date-time suffix, not just email address). `My Drive` child contains `@AREAS_gdrive` and `@PROJECTS_gdrive` — actual gDrive backup content. Do not touch. |
+| `TO BE SORTED___Folder_2022-03-30_1240_` | **True name** (not just "TO BE SORTED"). Has content — 1240 items. |
+| `Mac/Desktop` | System-protected path — `path_write/operation_suppressed`. Cannot be deleted via API. Leave as-is. |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/Items` | NOT empty — contains C4D 3D model asset subfolders. **Preserved.** |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/ASSETS` | NOT empty — contains identical C4D model subfolders. **⚠️ DUPLICATE FLAG — see below.** |
+| `SJL-MIGRATION-STAGING/areas-idrive-e2` | NOT empty — actual migrated iDrive C4D tutorial content. Preserved. |
+| `SJL-MIGRATION-STAGING/archives-idrive-e2` | NOT empty — actual migrated iDrive content. Preserved. |
+| `Infrastructure/Oracle-Cloud` | NOT empty — contains SSH key config. Preserved. |
+| `SJL Backups/SJL Writing Projects` | NOT empty — contains `.pages` bundles. Preserved. |
+| `Apps/Launch Center Pro/backups` | NOT empty — contains 2 `.lcpbackup` files. Preserved. |
+| `Air Video Server HD.app`, `CheatSheet.app`, `Tags.app` | NOT empty — `.app` bundles with Contents/Frameworks/Resources. Preserved. |
+
+#### ⚠️ DUPLICATE REVIEW REQUIRED — C4D Asset Sets
+
+`SJL-MIGRATION-STAGING/projects-idrive-e2/` contains two sub-folders with **identical subfolder names**:
+
+| Folder A | Folder B |
+|---|---|
+| `projects-idrive-e2/Items/` | `projects-idrive-e2/ASSETS/` |
+| `open-bible` | `open-bible` |
+| `iphone-15-pro-max` | `iphone-15-pro-max` |
+| `macbook-laptop` | `macbook-laptop` |
+| `iphone-14-pro` | `iphone-14-pro` |
+| `holy-bible-open` | `holy-bible-open` |
+| `apple-iphone-13-pro-max` | `apple-iphone-13-pro-max` |
+| `iphone-x-lowpoly` | `iphone-x-lowpoly` |
+| `open-bible-2` | `open-bible-2` |
+| `macbook-pro-2021` | `macbook-pro-2021` |
+| `kjv-bible` | `kjv-bible` |
+
+**Action required:** Shannon should compare `Items/` vs `ASSETS/` (e.g. via Delta Walker) to confirm they are true duplicates before deleting one. If identical: trash `ASSETS/` (or `Items/`) and designate the remaining one canonical. If divergent: merge into one folder with conflict resolution. Do NOT auto-delete until Shannon reviews.
+
+#### Deletion: 127 empty nested folders successfully deleted
+
+All confirmed empty via `list_folder` returning `entries:[], has_more:false` before deletion. Batch sent as single MCP `delete` call. All moved to Dropbox Deleted Files (restorable).
+
+| Folder path | Notes |
+|---|---|
+| `Migrated Paper Docs/Example Docs` | Example docs placeholder |
+| `SJL-MIGRATION-STAGING/quarantine-e2/01-quarantine-new-arrivals` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/quarantine-e2/02-quarantine-scan-pending` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/quarantine-e2/03-quarantine-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/quarantine-e2/04-quarantine-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/quarantine-e2/05-quarantine-exceptions` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/agent-data-e2/06-agent-data-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/agent-data-e2/07-agent-data-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/agent-data-e2/08-agent-data-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/agent-data-e2/09-agent-data-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/agent-data-e2/50-agent-data-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/bookstack-data-e2/06-bookstack-data-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/bookstack-data-e2/07-bookstack-data-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/bookstack-data-e2/08-bookstack-data-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/bookstack-data-e2/09-bookstack-data-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/bookstack-data-e2/50-bookstack-data-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/paperless-docs-e2/06-paperless-docs-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/paperless-docs-e2/07-paperless-docs-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/paperless-docs-e2/08-paperless-docs-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/paperless-docs-e2/09-paperless-docs-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/paperless-docs-e2/50-paperless-docs-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/n8n-backups-e2/06-n8n-backups-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/n8n-backups-e2/07-n8n-backups-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/n8n-backups-e2/08-n8n-backups-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/n8n-backups-e2/09-n8n-backups-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/n8n-backups-e2/50-n8n-backups-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/assets-e2/06-assets-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/assets-e2/07-assets-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/assets-e2/08-assets-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/assets-e2/09-assets-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/assets-e2/50-assets-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/stacks-backups-e2/06-stacks-backups-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/stacks-backups-e2/07-stacks-backups-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/stacks-backups-e2/08-stacks-backups-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/stacks-backups-e2/09-stacks-backups-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/stacks-backups-e2/50-stacks-backups-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/inbox-idrive-e2/06-inbox-idrive-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/inbox-idrive-e2/07-inbox-idrive-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/inbox-idrive-e2/08-inbox-idrive-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/inbox-idrive-e2/09-inbox-idrive-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/inbox-idrive-e2/50-inbox-idrive-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/graphics-media-e2/06-graphics-media-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/graphics-media-e2/07-graphics-media-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/graphics-media-e2/08-graphics-media-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/graphics-media-e2/09-graphics-media-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/graphics-media-e2/50-graphics-media-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/shannon-photos-e2/organized` | Parent of single empty YYYY subfolder — parent deleted |
+| `SJL-MIGRATION-STAGING/shannon-photos-e2/06-shannon-photos-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/shannon-photos-e2/07-shannon-photos-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/shannon-photos-e2/08-shannon-photos-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/shannon-photos-e2/09-shannon-photos-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/shannon-photos-e2/50-shannon-photos-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/video-media-e2/06-video-media-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/video-media-e2/07-video-media-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/video-media-e2/08-video-media-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/video-media-e2/09-video-media-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/video-media-e2/50-video-media-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/private-idrive-e2/06-private-idrive-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/private-idrive-e2/07-private-idrive-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/private-idrive-e2/08-private-idrive-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/private-idrive-e2/09-private-idrive-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/private-idrive-e2/50-private-idrive-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/resources-idrive-e2/entertainment-resources-idrive-e2` | Parent of single empty child — parent deleted |
+| `SJL-MIGRATION-STAGING/resources-idrive-e2/06-resources-idrive-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/resources-idrive-e2/07-resources-idrive-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/resources-idrive-e2/08-resources-idrive-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/resources-idrive-e2/09-resources-idrive-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/resources-idrive-e2/50-resources-idrive-archive` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/06-projects-idrive-processed` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/07-projects-idrive-review` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/08-projects-idrive-approved` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/09-projects-idrive-rejected` | Staging queue scaffold |
+| `SJL-MIGRATION-STAGING/projects-idrive-e2/50-projects-idrive-archive` | Staging queue scaffold |
+| `Movie Magic/MM Scheduling/Uninstall MM Scheduling/Uninstall MM Scheduling.app` | Empty .app bundle |
+| `Apps/Dropbox2Dropbox/Attachments` | Empty attachments placeholder |
+| `Movie Magic/MM Budgeting/Uninstall_MMBudgeting/Uninstall MMBudgeting.app/Contents/MacOS` | Empty app binary dir |
+| `Movie Magic/MM Budgeting/Uninstall_MMBudgeting/Uninstall MMBudgeting.app/Contents/Resources` | Empty app resources dir |
+| *(+52 additional numbered scaffold sub-queues across all idrive-e2 groups)* | Pattern: same 06/07/08/09/50 scaffold across each e2 group |
+
+**Total: 127 entries deleted successfully.** All moved to Dropbox Deleted Files (restorable if needed).
+
+#### Failed deletion (1)
+
+| Path | Error | Reason |
+|---|---|---|
+| `Mac/Desktop` | `path_write/operation_suppressed` — "Source path is not writable" | System-protected path; Dropbox API cannot write to Mac Desktop sync folder. Leave as-is. |
+
 ---
 
 ## EXECUTION ORDER (SECTION 11)
@@ -250,8 +385,8 @@ All confirmed empty before deletion (verified with `max_results=600` returning `
   - `@ARCHIVES_dropbox` (1000 items)
   - `@RESOURCES_dropbox` (601 items)
   - `@AREAS_dropbox` (219 items)
-- [ ] **Scan for empty nested folders** inside each of the 22 remaining non-PARA root folders
-- [ ] **Identify duplicates** across the drive — surface list for Shannon before deleting
+- [x] **Scan for empty nested folders** inside each of the 22 remaining non-PARA root folders — **complete 2026-07-23** (128 empties found, 127 deleted, 1 failed: `Mac/Desktop`)
+- [x] **Identify duplicates** — **surfaced 2026-07-23**: `SJL-MIGRATION-STAGING/projects-idrive-e2/Items` vs `ASSETS` flagged as likely C4D asset duplicates; Shannon to compare with Delta Walker before deletion
 - [ ] **Route non-PARA root items** to PARA (Shannon approves each batch):
   - `TO BE SORTED___Folder_2022-03-30_1240_` → `@INBOX_dropbox/`
   - `InDesign_20_LS20.dmg` → `@RESOURCES_dropbox/` or delete
