@@ -468,8 +468,8 @@ The real FBX + PNG texture files are on **iDrive E2**, not Dropbox:
 - [x] **Delete empty folders** — 32 deleted/purged (25 via `rclone rmdir`, 7 via `rclone purge`). See deletion log below.
 - [x] **Create 5 PARA folders** — `@INBOX_dropbox-biz`, `@PROJECTS_dropbox-biz`, `@AREAS_dropbox-biz`, `@RESOURCES_dropbox-biz`, `@ARCHIVES_dropbox-biz`
 - [x] **Route 15 content folders** — all 15 moved to approved PARA destinations (see routing table below)
-- [ ] **After Effects CS6 (Udemy Course)** — 16-module video course at root. Keep in ARCHIVES or delete? Awaiting Shannon decision.
-- [ ] **Air Video Server HD.app** — old discontinued Mac app bundle at root. Safe to delete. Awaiting Shannon confirmation.
+- [x] **After Effects CS6 (Udemy Course)** — 16-module video course. **Decision 2026-07-23: Leave at root as S3 migration candidate.** Do not move within Dropbox.
+- [x] **Air Video Server HD.app** — old discontinued Mac app bundle. **Decision 2026-07-23: Leave at root as S3 migration candidate.** Do not move within Dropbox.
 - [ ] **`Mr. Clay's File`** — Dropbox API ghost entry (accessible in lsd but returns "not found" on access). Delete via Dropbox web UI or desktop app.
 
 #### 2026-07-23 — Business Dropbox Cleanup Operations
