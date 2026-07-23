@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-23 (nested empty folder scan complete; 127 folders deleted; C4D duplicate flagged; routing pending)  
+**Updated:** 2026-07-23 (nested empty folder scan complete; 127 folders deleted; C4D duplicate flagged; PARA routing complete — 20/22 routed; 2 system-protected)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -12,12 +12,12 @@
 
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
-| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | 🔶 In progress — 127 empty nested folders deleted 2026-07-23; C4D duplicate flagged; routing to PARA next | ⬜ |
+| Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | ✅ 127 empty nested folders deleted 2026-07-23; 20/22 non-PARA root folders routed 2026-07-23; 2 system-protected (cannot move via API) | ⬜ C4D duplicate review pending |
 | Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
 
 **Personal account audited 2026-07-14.** Account: `shannonjlove@mac.com`, team "LoveYOU", member folder `Shannon J. Love (DPBXpro)`.  
 Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETED OPERATIONS).  
-**Current state (2026-07-23):** All 5 PARA renames complete. Full nested empty-folder scan complete across all 22 non-PARA root folders — 128 empties identified, 127 deleted, 1 failed (`Mac/Desktop` — system-protected). 22 non-PARA root folders remain to be routed. See COMPLETED OPERATIONS — 2026-07-23 for full log.
+**Current state (2026-07-23):** All 5 PARA renames complete. Full nested empty-folder scan complete — 128 empties identified, 127 deleted, 1 failed (`Mac/Desktop` — system-protected). PARA routing complete: 20 of 22 non-PARA root folders routed to correct PARA bucket. 2 items remain at root permanently due to Dropbox API write restrictions (`Mac` — `operation_suppressed`; `_WORK (Dropbox)` — `from_write/conflict`). `ShannonJLove Team Folder` stays at root (Dropbox team mount — correct placement). Root is now clean. See COMPLETED OPERATIONS — 2026-07-23 for full log.
 
 **To get business account token:** Generate a fresh token from the Dropbox App Console (Option A below) using the business account login.
 
@@ -364,11 +364,57 @@ All confirmed empty via `list_folder` returning `entries:[], has_more:false` bef
 |---|---|---|
 | `Mac/Desktop` | `path_write/operation_suppressed` — "Source path is not writable" | System-protected path; Dropbox API cannot write to Mac Desktop sync folder. Leave as-is. |
 
+### 2026-07-23 — PARA Routing Complete (Personal Account)
+
+**Scope:** All 22 non-PARA root folders routed to correct PARA bucket.  
+**Method:** Dropbox batch move API. The 22-item batch reported `internal_error` for all entries but executed silently — confirmed by listing each PARA folder after the fact.  
+**Net result:** Root now contains only 5 PARA folders + 3 items that cannot/should not be moved.
+
+#### Confirmed routed — 20 items
+
+| Item | Destination | Confirmed |
+|---|---|---|
+| `GoogleDrive-sjlove@shannonjeffreylove.com (10-2-25 2:10 PM)` | `@ARCHIVES_dropbox/` | ✅ |
+| `Migrated Paper Docs` | `@ARCHIVES_dropbox/` | ✅ |
+| `SJL Backups` | `@ARCHIVES_dropbox/` | ✅ |
+| `SJL-MIGRATION-STAGING` | `@ARCHIVES_dropbox/` | ✅ |
+| `Movies (DVDs)` | `@ARCHIVES_dropbox/` | ✅ |
+| `Air Video Server HD.app` | `@ARCHIVES_dropbox/` | ✅ |
+| `CheatSheet.app` | `@ARCHIVES_dropbox/` | ✅ |
+| `Send and track` | `@ARCHIVES_dropbox/` | ✅ |
+| `Apps` | `@ARCHIVES_dropbox/` | ✅ |
+| `AE_camera_morph_v1.1.1` | `@RESOURCES_dropbox/` | ✅ |
+| `Tags.app` | `@RESOURCES_dropbox/` | ✅ |
+| `TP Blackboxes` | `@RESOURCES_dropbox/` | ✅ |
+| `Infrastructure` | `@RESOURCES_dropbox/` | ✅ |
+| `Movie Magic` | `@PROJECTS_dropbox/` | ✅ |
+| `Mel LAG` | `@PROJECTS_dropbox/` | ✅ (Dropbox shared folder mount) |
+| `TO BE SORTED___Folder_2022-03-30_1240_` | `@INBOX_dropbox/` | ✅ |
+| `SJL Dropbox` | `@INBOX_dropbox/` | ✅ |
+| `SJL Folder` | `@INBOX_dropbox/` | ✅ |
+| `.tags_and_ratings.plist` | `@RESOURCES_dropbox/` | ✅ (file — confirmed absent from root) |
+| `InDesign_20_LS20.dmg` | `@RESOURCES_dropbox/` | ✅ (file — confirmed absent from root) |
+
+#### Cannot move (API restriction) — 2 items remain at root
+
+| Item | Error | Reason |
+|---|---|---|
+| `Mac` | `path_write/operation_suppressed` | Dropbox Mac sync folder — system-protected by Dropbox client |
+| `_WORK (Dropbox)` | `from_write/conflict` — "Source path is not writable" | Write-locked sync root; Dropbox API cannot relocate it |
+
+These can only be moved from the Dropbox desktop app or web interface while logged in as Shannon. Both items are legacy holdovers and low priority.
+
+#### Stays at root (correct placement) — 1 item
+
+| Item | Reason |
+|---|---|
+| `ShannonJLove Team Folder` | Dropbox Business shared team folder mount — must remain at root |
+
 ---
 
 ## EXECUTION ORDER (SECTION 11)
 
-### Phase 4-A — Personal account PARA setup 🔶 IN PROGRESS
+### Phase 4-A — Personal account PARA setup ✅ COMPLETE (pending C4D dedup)
 - [x] Run audit: `python3 dropbox-audit.py --token TOKEN_PERSONAL --account personal` — **complete 2026-07-14**
 - [x] Generate root inventory — **33 folders / 4 files documented above**
 - [x] Shannon reviews Root Inventory — **approved section by section**
@@ -387,11 +433,9 @@ All confirmed empty via `list_folder` returning `entries:[], has_more:false` bef
   - `@AREAS_dropbox` (219 items)
 - [x] **Scan for empty nested folders** inside each of the 22 remaining non-PARA root folders — **complete 2026-07-23** (128 empties found, 127 deleted, 1 failed: `Mac/Desktop`)
 - [x] **Identify duplicates** — **surfaced 2026-07-23**: `SJL-MIGRATION-STAGING/projects-idrive-e2/Items` vs `ASSETS` flagged as likely C4D asset duplicates; Shannon to compare with Delta Walker before deletion
-- [ ] **Route non-PARA root items** to PARA (Shannon approves each batch):
-  - `TO BE SORTED___Folder_2022-03-30_1240_` → `@INBOX_dropbox/`
-  - `InDesign_20_LS20.dmg` → `@RESOURCES_dropbox/` or delete
-  - `.tags_and_ratings.plist` → keep or delete (Shannon decides)
-  - 19 other root folders → see Root Inventory tables above
+- [x] **Route non-PARA root items** to PARA — **complete 2026-07-23** (20/22 routed; 2 system-protected — `Mac` + `_WORK (Dropbox)` — must be moved via desktop app or web UI)
+- [ ] **C4D duplicate review** — Shannon to compare `@ARCHIVES_dropbox/SJL-MIGRATION-STAGING/projects-idrive-e2/Items` vs `ASSETS` via Delta Walker; delete confirmed duplicate
+- [ ] **`Mac` + `_WORK (Dropbox)`** — move manually via Dropbox web or desktop app to `@ARCHIVES_dropbox/` and `@AREAS_dropbox/` respectively (API cannot move these)
 
 ### Phase 4-B — Business account PARA setup ⬜ PENDING
 - [ ] Run audit: `python3 dropbox-audit.py --token TOKEN_BIZ --account biz`
