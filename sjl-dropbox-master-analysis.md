@@ -1,6 +1,6 @@
 # SJL Dropbox Master Analysis
 **Created:** 2026-07-12  
-**Updated:** 2026-07-23 (nested empty folder scan complete; 127 folders deleted; C4D dedup resolved — both `Items` + `ASSETS` confirmed empty, both deleted; iDrive E2 dedup deferred; PARA routing complete — 20/22 routed; 2 system-protected)  
+**Updated:** 2026-07-23 (Phase 4-B complete — Business Dropbox audit done; 32 empty folders deleted; 5 PARA folders created; 15 content folders routed; root clean except 2 items pending decision + 1 ghost entry)  
 **Accounts:** Personal (`shannonjlove@mac.com` tag: `dropbox`) + Business (tag: `dropbox-biz`)  
 **Phase:** 4 of 7 per CLAUDE.md cloud migration plan  
 
@@ -13,7 +13,7 @@
 | Account | PARA Folders | Root Audit | Cleanup | Dedup Check |
 |---|---|---|---|---|
 | Personal (`dropbox`) | ✅ All 5 PARA folders renamed | ✅ Complete — 33 folders / 4 files (27 remain after deletions) | ✅ 127 empty nested folders deleted 2026-07-23; 20/22 non-PARA root folders routed 2026-07-23; 2 system-protected (cannot move via API) | ✅ C4D dedup resolved 2026-07-23 — both `Items` + `ASSETS` confirmed empty (0 files), both deleted. iDrive E2 dedup (`GRAPHIC ASSETS` vs `New Folder With Items`) deferred — separate task |
-| Business (`dropbox-biz`) | ⬜ Need token | ⬜ | ⬜ | ⬜ |
+| Business (`dropbox-biz`) | ✅ All 5 PARA folders created 2026-07-23 | ✅ Complete — 50 root folders / 0 root files audited 2026-07-23 | ✅ 32 empty/ghost folders deleted; 15 content folders routed 2026-07-23. 2 items pending Shannon decision: `After Effects CS6 (Udemy)`, `Air Video Server HD.app`. 1 ghost entry: `Mr. Clay's File` (Dropbox API anomaly — delete via web UI). Shared workspace stays at root. | ⬜ Phase 4-C (cross-account dedup) pending — 7 name collisions identified (see Phase 4-C below) |
 
 **Personal account audited 2026-07-14.** Account: `shannonjlove@mac.com`, team "LoveYOU", member folder `Shannon J. Love (DPBXpro)`.  
 Root had 33 folders and 4 files — 9 items deleted/renamed so far (see COMPLETED OPERATIONS).  
@@ -462,11 +462,69 @@ The real FBX + PNG texture files are on **iDrive E2**, not Dropbox:
 - [ ] **`Mac` + `_WORK (Dropbox)`** — move manually via Dropbox web or desktop app to `@ARCHIVES_dropbox/` and `@AREAS_dropbox/` respectively (API cannot move these)
 - [ ] **iDrive E2 dedup (deferred)** — resolve `GRAPHIC ASSETS` (117 obj, 6.5 GiB) vs `New Folder With Items` (100 obj, 7.3 GiB) inside `projects-idrive-e2` bucket before migrating C4D assets to Dropbox
 
-### Phase 4-B — Business account PARA setup ⬜ PENDING
-- [ ] Run audit: `python3 dropbox-audit.py --token TOKEN_BIZ --account biz`
-- [ ] Review root inventory with Shannon
-- [ ] Create missing PARA folders
-- [ ] Route root items to PARA
+### Phase 4-B — Business account PARA setup ✅ COMPLETE (2026-07-23)
+- [x] **Token obtained** — second token with correct scopes (`files.metadata.read`, `files.content.read`, `files.content.write`, `files.metadata.write`, `account_info.read`) via Dropbox App Console
+- [x] **Root audit** — 50 folders / 0 root files; 223.6 GiB total. 35 confirmed-empty folders identified.
+- [x] **Delete empty folders** — 32 deleted/purged (25 via `rclone rmdir`, 7 via `rclone purge`). See deletion log below.
+- [x] **Create 5 PARA folders** — `@INBOX_dropbox-biz`, `@PROJECTS_dropbox-biz`, `@AREAS_dropbox-biz`, `@RESOURCES_dropbox-biz`, `@ARCHIVES_dropbox-biz`
+- [x] **Route 15 content folders** — all 15 moved to approved PARA destinations (see routing table below)
+- [ ] **After Effects CS6 (Udemy Course)** — 16-module video course at root. Keep in ARCHIVES or delete? Awaiting Shannon decision.
+- [ ] **Air Video Server HD.app** — old discontinued Mac app bundle at root. Safe to delete. Awaiting Shannon confirmation.
+- [ ] **`Mr. Clay's File`** — Dropbox API ghost entry (accessible in lsd but returns "not found" on access). Delete via Dropbox web UI or desktop app.
+
+#### 2026-07-23 — Business Dropbox Cleanup Operations
+
+**32 Empty Folders Deleted:**
+
+| Method | Folders |
+|---|---|
+| `rmdir` (25) | `.SyncMate`, `.TheUnarchiverTemp0`, `SortMyBox`, `untitled folder`, `S`, `tumblr`, `Yahoo Mail`, `SCAPPLE`, `idraw stuff`, `Mobile Uploads`, `Email Elements`, `GC Cuts`, `Sept 14 2020`, `Downloads from Jan 8, 2019 at 12.15.36 PM`, `Digital Tutors - Animating a Logo with Particles in After Effects`, `Jeffrey Matthews`, `Mom 70 bday videos`, `NYC Stock Footage`, `Online Purchases, Receipts,, Application Licenses (iCloud Backup copy`, `Pictures`, `Receipts (App purchases App store)`, `SJL Resumes`, `SnappTrap folder`, `WRITING RESEARCH ARTICLES`, `Girls Cruise` |
+| `purge` (7) | `.sync`, `IFTTT`, `Samsung Link`, `users`, `GifGun1.7`, `2017 Producer Folders`, `2017v2(TGMGTPYSM)` |
+
+**15 Content Folders Routed:**
+
+| Source | Destination | Status |
+|---|---|---|
+| `Apps` | `@ARCHIVES_dropbox-biz/Apps` | ✅ Moved |
+| `Cinema 4D R17 (Hybrid Win-Mac) with Keygen - WORKS!` | `@ARCHIVES_dropbox-biz/` | ✅ Moved |
+| `EP Movie Magic Budgeting` | `@RESOURCES_dropbox-biz/` | ✅ Moved |
+| `Editing & Graphics` | `@RESOURCES_dropbox-biz/` | ✅ Moved |
+| `El Capittian HD Drive Partition Contents to Reinstalll (1)` | `@ARCHIVES_dropbox-biz/` | ✅ Moved |
+| `Miss America 2019 Nia Franklin` | `@ARCHIVES_dropbox-biz/` | ✅ Moved |
+| `Movie Magic` | `@RESOURCES_dropbox-biz/` | ✅ Moved |
+| `Plex` | `@ARCHIVES_dropbox-biz/` | ✅ Moved |
+| `SJL Backups` | `@ARCHIVES_dropbox-biz/` | ✅ Moved (appeared after API propagation delay) |
+| `SJL Comps MacDropAny Via Dropbox Sync` | `@ARCHIVES_dropbox-biz/` | ✅ Moved |
+| `SJL Dropbox` | `@ARCHIVES_dropbox-biz/` | ✅ Moved (appeared after API propagation delay) |
+| `SJL Folder` | `@INBOX_dropbox-biz/` | ✅ Moved |
+| `SJL ON GoogleDrive` | `@ARCHIVES_dropbox-biz/` | ✅ Moved |
+| `TGMGTPYSM` | `@PROJECTS_dropbox-biz/` | ✅ Moved |
+| `TP Blackboxes` | `@RESOURCES_dropbox-biz/` | ✅ Moved |
+
+**Current Business Dropbox Root State (post-cleanup):**
+```
+@ARCHIVES_dropbox-biz/   ← Apps, C4D, El Cap, Miss America, Plex, SJL Backups, SJL Comps, SJL Dropbox, SJL ON GoogleDrive
+@AREAS_dropbox-biz/      ← (empty — correct)
+@INBOX_dropbox-biz/      ← SJL Folder
+@PROJECTS_dropbox-biz/   ← TGMGTPYSM
+@RESOURCES_dropbox-biz/  ← EP Movie Magic, Editing & Graphics, Movie Magic, TP Blackboxes
+After Effects CS6...     ← ⏳ Awaiting decision
+Air Video Server HD.app  ← ⏳ Awaiting decision
+Mr. Clay's File          ← Ghost entry — delete via web UI
+ShannonJLove's shared workspace  ← Keep at root (Dropbox Business shared workspace mount)
+```
+
+**Note on Apps/Offcloud.com:** `Apps/@ARCHIVES_dropbox-biz/Apps/Offcloud.com` contains large MP4 video files (several GB). Per Shannon's S3 direction, these will be candidates for migration out of Dropbox to S3 storage during Phase 7.
+
+#### Cross-account Duplicate Pairs Identified (Phase 4-C)
+7 name collisions between personal and business Dropbox (not yet resolved):
+- `SJL Writing Projects` (inside `SJL Backups`) — in both accounts
+- `Scrivener Backups` (inside `SJL Backups`) — in both accounts
+- `Movie Magic` — both accounts (same screenwriting software)
+- `TP Blackboxes` — both accounts (TP4/TP5/TP6 in biz)
+- `SJL Dropbox` — both accounts
+- `SJL Folder` — both accounts
+- `Apps` — both accounts
 
 ### Phase 4-C — Cross-account dedup check ⬜ PENDING
 - [ ] Compare inventories from both accounts
