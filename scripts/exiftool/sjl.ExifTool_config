@@ -1,0 +1,62 @@
+# =============================================================================
+# SJL ExifTool Config — Shannon J. Love | shannonjlove.cloud
+# Defines the custom XMP-SJL namespace for all SJL file processing.
+#
+# Install:
+#   cp sjl.ExifTool_config ~/.ExifTool_config          # per-user (Mac or Linux)
+#   cp sjl.ExifTool_config /root/.ExifTool_config      # root on server
+#   cp sjl.ExifTool_config /opt/exiftool/.ExifTool_config  # project-local
+#
+# Usage in scripts:
+#   exiftool -config /opt/exiftool/.ExifTool_config -XMP-SJL:SJLuuid24="..." file.jpg
+#   OR install to ~/.ExifTool_config and omit the -config flag entirely.
+# =============================================================================
+
+%Image::ExifTool::UserDefined = (
+
+    # Hook the SJL namespace into ExifTool's XMP main table
+    'Image::ExifTool::XMP::Main' => {
+        SJL => {
+            SubDirectory => {
+                TagTable => 'Image::ExifTool::UserDefined::SJL',
+            },
+        },
+    },
+);
+
+# Define all SJL XMP tags
+%Image::ExifTool::UserDefined::SJL = (
+    GROUPS    => { 0 => 'XMP', 1 => 'XMP-SJL', 2 => 'Other' },
+    NAMESPACE => { 'sjl' => 'https://shannonjlove.cloud/ns/sjl/1.0/' },
+    WRITABLE  => 'string',
+
+    # Core identity
+    SJLuuid24     => { Notes => '24-char hex UUID — permanent file identity' },
+    SJLprocessed  => { Notes => 'ISO 8601 UTC timestamp when SJL processing ran' },
+    SJLowner      => { Notes => 'File owner — Shannon J. Love' },
+
+    # PARA routing
+    SJLparabucket => { Notes => 'PARA bucket: inbox|projects|areas|resources|archives' },
+    SJLcloud      => { Notes => 'Cloud: gdrive|icloud|dropbox|dropbox-biz|pcloud|mega|mediafire|sjlcloud' },
+    SJLproject    => { Notes => 'Project name slug (e.g. Our-Time)' },
+
+    # Location (populated by reverse geocoding step)
+    SJLaddress    => { Notes => 'Human-readable address from GPS reverse geocode' },
+    SJLcity       => { Notes => 'City from reverse geocode' },
+    SJLstate      => { Notes => 'State/region from reverse geocode' },
+    SJLcountry    => { Notes => 'Country code from reverse geocode' },
+
+    # Link layer (populated by Hookmark / Raindrop step)
+    SJLhookmarkURL  => { Notes => 'Hookmark hook:// address for this file' },
+    SJLuniversalURL => { Notes => 'Universal link: https://hook.shannonjlove.cloud/open?id=UUID24' },
+    SJLraindropID   => { Notes => 'Raindrop.io bookmark numeric ID' },
+    SJLhubLink      => { Notes => 'Raindrop URL of the project hub this file belongs to' },
+
+    # TagBot enrichment (populated after ML analysis)
+    SJLtagbotDesc   => { Notes => 'TagBot-generated description segment' },
+    SJLtagbotTags   => { Notes => 'Comma-separated tags from TagBot' },
+    SJLtagbotModel  => { Notes => 'ML models used: e.g. clip,blip,yolov8n' },
+    SJLtagbotScore  => { Notes => 'TagBot confidence score 0.0-1.0' },
+);
+
+1;  # required — do not remove
