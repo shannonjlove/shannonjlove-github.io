@@ -158,11 +158,15 @@ PROCESSED_UTC=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 exiftool -overwrite_original -q \
     -XMP-xmp:Identifier="$UUID24" \
-    -XMP:SJLuuid24="$UUID24" \
-    -XMP:SJLparabucket="$PARA" \
-    -XMP:SJLcloud="$CLOUD" \
-    -XMP:SJLprocessed="$PROCESSED_UTC" \
-    -XMP:SJLowner="$SJL_OWNER" \
+    -XMP-SJL:SJLuuid24="$UUID24" \
+    -XMP-SJL:SJLparabucket="$PARA" \
+    -XMP-SJL:SJLcloud="$CLOUD" \
+    -XMP-SJL:SJLprocessed="$PROCESSED_UTC" \
+    -XMP-SJL:SJLowner="$SJL_OWNER" \
+    -XMP-SJL:SJLcategory="$CATEGORY" \
+    -XMP-SJL:SJLsubcategory="$SUBCATEGORY" \
+    -XMP-SJL:SJLoriginalFilename="$BASENAME" \
+    -XMP-SJL:SJLprocessedBy="hazel" \
     -IPTC:Keywords+="sjl" \
     -IPTC:Keywords+="$CLOUD" \
     -IPTC:Keywords+="$CATEGORY" \

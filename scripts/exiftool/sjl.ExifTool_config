@@ -2,6 +2,12 @@
 # SJL ExifTool Config — Shannon J. Love | shannonjlove.cloud
 # Defines the custom XMP-SJL namespace for all SJL file processing.
 #
+# Covers 300+ tags sourced from:
+#   - master_metadata_tags.md  (General, Image/Video, Camera, Date, Audio,
+#                                Spotlight, Misc categories)
+#   - sjlcrafthandofftemplate.md (PARA codes, DOCID, version, SHA, sensitivity)
+#   - Core SJL system fields  (UUID24, PARA routing, location, links, TagBot)
+#
 # Install:
 #   cp sjl.ExifTool_config ~/.ExifTool_config          # per-user (Mac or Linux)
 #   cp sjl.ExifTool_config /root/.ExifTool_config      # root on server
@@ -10,6 +16,8 @@
 # Usage in scripts:
 #   exiftool -config /opt/exiftool/.ExifTool_config -XMP-SJL:SJLuuid24="..." file.jpg
 #   OR install to ~/.ExifTool_config and omit the -config flag entirely.
+#
+# Tag prefix is always XMP-SJL: (e.g. -XMP-SJL:SJLuuid24, NOT -XMP:SJLuuid24)
 # =============================================================================
 
 %Image::ExifTool::UserDefined = (
@@ -24,39 +32,432 @@
     },
 );
 
-# Define all SJL XMP tags
+# =============================================================================
+# SJL XMP tag table — all tags in https://shannonjlove.cloud/ns/sjl/1.0/
+# =============================================================================
 %Image::ExifTool::UserDefined::SJL = (
     GROUPS    => { 0 => 'XMP', 1 => 'XMP-SJL', 2 => 'Other' },
     NAMESPACE => { 'sjl' => 'https://shannonjlove.cloud/ns/sjl/1.0/' },
     WRITABLE  => 'string',
 
-    # Core identity
-    SJLuuid24     => { Notes => '24-char hex UUID — permanent file identity' },
-    SJLprocessed  => { Notes => 'ISO 8601 UTC timestamp when SJL processing ran' },
-    SJLowner      => { Notes => 'File owner — Shannon J. Love' },
+    # -------------------------------------------------------------------------
+    # CORE IDENTITY
+    # -------------------------------------------------------------------------
+    SJLuuid24           => { Notes => '24-char hex UUID4 — permanent file identity, never changes' },
+    SJLprocessed        => { Notes => 'ISO 8601 UTC timestamp when SJL processing last ran' },
+    SJLowner            => { Notes => 'File owner — Shannon J. Love' },
+    SJLprocessedBy      => { Notes => 'Tool that processed: hazel|filewarden|hookvault|manual' },
+    SJLoriginalFilename => { Notes => 'Original filename before SJL rename was applied' },
+    SJLcanonicalFilename=> { Notes => 'Full canonical SJL filename after processing' },
+    SJLisHub            => { Notes => 'true if this file IS a project hub' },
+    SJLisFolder         => { Notes => 'true if this entry represents a PARA folder bookmark' },
+    SJLisDuplicateOf    => { Notes => 'UUID24 of the canonical file if this is a duplicate' },
+    SJLcanonical        => { Notes => 'true if this is the canonical copy across clouds' },
+    SJLcrossCloudMirror => { Notes => 'UUID24 of mirror copy on another cloud' },
 
-    # PARA routing
-    SJLparabucket => { Notes => 'PARA bucket: inbox|projects|areas|resources|archives' },
-    SJLcloud      => { Notes => 'Cloud: gdrive|icloud|dropbox|dropbox-biz|pcloud|mega|mediafire|sjlcloud' },
-    SJLproject    => { Notes => 'Project name slug (e.g. Our-Time)' },
+    # -------------------------------------------------------------------------
+    # CRAFT DOCUMENT IDENTITY (sjlcrafthandofftemplate.md)
+    # -------------------------------------------------------------------------
+    SJLdocid            => { Notes => 'Permanent document ID — e.g. SJL-TV-000001' },
+    SJLparacode         => { Notes => '6-digit PARA code — e.g. 021010 (Series Pilot)' },
+    SJLpararoot         => { Notes => 'PARA root bucket: INBOX|PROJECTS|AREAS|RESOURCES|ARCHIVES|PRIVATE-MEDIA|SYSTEM-AUTOMATION|APPLICATION-DATA|QUARANTINE' },
+    SJLsemanticTitle    => { Notes => 'Human-readable semantic title for the document' },
+    SJLversionMajor     => { Notes => 'Version major number (integer as string)' },
+    SJLversionMinor     => { Notes => 'Version minor number (integer as string)' },
+    SJLsha256           => { Notes => 'Full 64-char SHA-256 hash of file content' },
+    SJLsha8             => { Notes => '8-char SHA-256 prefix for filename use' },
+    SJLsensitivity      => { Notes => 'Sensitivity level: public|internal|confidential|restricted' },
+    SJLschemaVersion    => { Notes => 'SJL sidecar JSON schema version (e.g. 1.0)' },
+    SJLdomain           => { Notes => 'Craft domain: tv-writing|film|stage-play|pitch|music|etc.' },
+    SJLstatus           => { Notes => 'Document status: active|archived|superseded|quarantined' },
+    SJLformat           => { Notes => 'File format slug: markdown|fdx|pdf|json|mov|etc.' },
+    SJLprovenance       => { Notes => 'Provenance chain as JSON array string' },
+    SJLclassConfidence  => { Notes => 'Classification confidence score 0.0-1.0' },
+    SJLchangeLog        => { Notes => 'Comma-separated log of rename/move/version events' },
+    SJLlastChangeLink   => { Notes => 'Raindrop URL of most recent CHANGES entry' },
 
-    # Location (populated by reverse geocoding step)
-    SJLaddress    => { Notes => 'Human-readable address from GPS reverse geocode' },
-    SJLcity       => { Notes => 'City from reverse geocode' },
-    SJLstate      => { Notes => 'State/region from reverse geocode' },
-    SJLcountry    => { Notes => 'Country code from reverse geocode' },
+    # -------------------------------------------------------------------------
+    # PARA ROUTING
+    # -------------------------------------------------------------------------
+    SJLparabucket       => { Notes => 'PARA bucket: inbox|projects|areas|resources|archives' },
+    SJLcloud            => { Notes => 'Cloud: gdrive|icloud|dropbox|dropbox-biz|pcloud|mega|mediafire|sjlcloud' },
+    SJLproject          => { Notes => 'Project name slug — e.g. Our-Time, Built-For-This' },
+    SJLinboxCloud       => { Notes => 'Cloud where file first arrived in @INBOX' },
+    SJLinboxTimestamp   => { Notes => 'ISO 8601 UTC timestamp when file landed in @INBOX' },
+    SJLprojects         => { Notes => 'Comma-separated project slugs this file belongs to' },
 
-    # Link layer (populated by Hookmark / Raindrop step)
-    SJLhookmarkURL  => { Notes => 'Hookmark hook:// address for this file' },
-    SJLuniversalURL => { Notes => 'Universal link: https://hook.shannonjlove.cloud/open?id=UUID24' },
-    SJLraindropID   => { Notes => 'Raindrop.io bookmark numeric ID' },
-    SJLhubLink      => { Notes => 'Raindrop URL of the project hub this file belongs to' },
+    # -------------------------------------------------------------------------
+    # LINK LAYER (Hookmark / Raindrop / Universal)
+    # -------------------------------------------------------------------------
+    SJLhookmarkURL      => { Notes => 'Hookmark hook:// address for this file' },
+    SJLuniversalURL     => { Notes => 'Universal link: https://hook.shannonjlove.cloud/open?id=UUID24' },
+    SJLraindropID       => { Notes => 'Raindrop.io bookmark numeric ID' },
+    SJLhubLink          => { Notes => 'Raindrop URL of the project hub this file belongs to' },
+    SJLnativeLink       => { Notes => 'Cloud-native permanent share URL (clean, no tracking)' },
+    SJLcleanLink        => { Notes => 'Native URL with all tracking params stripped' },
+    SJLmarkdownLink     => { Notes => 'Markdown link: [filename](clean-url)' },
+    SJLdeepLink         => { Notes => 'Deep link with anchor: url#page=N or url#t=Ns' },
+    SJLsearchLink       => { Notes => 'hook://search?q=UUID24 — fallback when URL is dead' },
+    SJLparentFolderLink => { Notes => 'Raindrop URL of parent PARA folder entry' },
+    SJLrelatedLinks     => { Notes => 'Comma-separated Raindrop URLs of sibling files in project cluster' },
+    SJLsiblingUUIDs     => { Notes => 'Comma-separated UUID24s of sibling files in project cluster' },
 
-    # TagBot enrichment (populated after ML analysis)
-    SJLtagbotDesc   => { Notes => 'TagBot-generated description segment' },
-    SJLtagbotTags   => { Notes => 'Comma-separated tags from TagBot' },
-    SJLtagbotModel  => { Notes => 'ML models used: e.g. clip,blip,yolov8n' },
-    SJLtagbotScore  => { Notes => 'TagBot confidence score 0.0-1.0' },
+    # -------------------------------------------------------------------------
+    # LOCATION (reverse geocoding)
+    # -------------------------------------------------------------------------
+    SJLaddress          => { Notes => 'Human-readable address from GPS reverse geocode' },
+    SJLcity             => { Notes => 'City from reverse geocode' },
+    SJLstate            => { Notes => 'State/region from reverse geocode' },
+    SJLcountry          => { Notes => 'Country code from reverse geocode (e.g. US)' },
+    SJLlatitude         => { Notes => 'GPS latitude decimal degrees (positive = N)' },
+    SJLlongitude        => { Notes => 'GPS longitude decimal degrees (positive = E)' },
+    SJLregion           => { Notes => 'Geographic region or neighborhood from reverse geocode' },
+    SJLlocation         => { Notes => 'Combined human-readable location string' },
+
+    # -------------------------------------------------------------------------
+    # TAGBOT ENRICHMENT (ML analysis)
+    # -------------------------------------------------------------------------
+    SJLtagbotDesc       => { Notes => 'TagBot-generated description segment for filename' },
+    SJLtagbotTags       => { Notes => 'Comma-separated tags from TagBot ML analysis' },
+    SJLtagbotModel      => { Notes => 'ML models used — e.g. clip,blip,yolov8n,whisper-small' },
+    SJLtagbotScore      => { Notes => 'TagBot category confidence score 0.0-1.0' },
+    SJLtagbotCaption    => { Notes => 'Full natural-language caption from BLIP/LLaVA' },
+    SJLtagbotObjects    => { Notes => 'Comma-separated detected objects from YOLO' },
+    SJLtagbotFaces      => { Notes => 'Comma-separated detected face IDs from DeepFace' },
+    SJLtagbotTranscript => { Notes => 'Speech transcript from Whisper (truncated to 500 chars)' },
+    SJLtagbotKeywords   => { Notes => 'Comma-separated semantic keywords from KeyBERT' },
+    SJLtagbotRunAt      => { Notes => 'ISO 8601 UTC timestamp when TagBot ran' },
+
+    # -------------------------------------------------------------------------
+    # GENERAL ATTRIBUTES (master_metadata_tags.md — General section)
+    # -------------------------------------------------------------------------
+    SJLalbum            => { Notes => 'Album name this file belongs to' },
+    SJLauthors          => { Notes => 'Comma-separated list of authors' },
+    SJLcategory         => { Notes => 'SJL category (e.g. media, document, code)' },
+    SJLsubcategory      => { Notes => 'SJL subcategory (e.g. image, video, pdf, script)' },
+    SJLcomment          => { Notes => 'User or system comment on the file' },
+    SJLcomposer         => { Notes => 'Music composer name' },
+    SJLcontentCreator   => { Notes => 'Person or tool that created the content' },
+    SJLcontributors     => { Notes => 'Comma-separated list of contributors' },
+    SJLcontents         => { Notes => 'Summary of file contents' },
+    SJLconversationID   => { Notes => 'Thread or conversation identifier (email/messaging)' },
+    SJLcopyright        => { Notes => 'Copyright notice string' },
+    SJLcoverage         => { Notes => 'Dublin Core coverage — spatial or temporal scope' },
+    SJLcredit           => { Notes => 'Photo or media credit line' },
+    SJLdescription      => { Notes => 'Human-readable description of the file or content' },
+    SJLdeviceMake       => { Notes => 'Device manufacturer (camera, phone, scanner)' },
+    SJLdeviceModel      => { Notes => 'Device model string' },
+    SJLdirector         => { Notes => 'Director name for film/video' },
+    SJLduration         => { Notes => 'Duration as human-readable string (e.g. 2:34)' },
+    SJLeditors          => { Notes => 'Comma-separated list of editors' },
+    SJLencodingSoftware => { Notes => 'Software used to encode the file' },
+    SJLfileLabel        => { Notes => 'Finder/cloud label color name' },
+    SJLfilename         => { Notes => 'Current filename including extension' },
+    SJLfileExtension    => { Notes => 'Lowercase file extension without dot' },
+    SJLfileSize         => { Notes => 'Human-readable file size (e.g. 4.2 MB)' },
+    SJLfileSizeInBytes  => { Notes => 'File size in bytes as integer string' },
+    SJLlogicalSize      => { Notes => 'Logical size (allocated disk space) in bytes' },
+    SJLflagColor        => { Notes => 'Flag color: red|orange|yellow|green|blue|purple|grey' },
+    SJLflagged          => { Notes => 'true if file is flagged for review' },
+    SJLfonts            => { Notes => 'Comma-separated font names used in document' },
+    SJLfullName         => { Notes => 'Full display name of person or entity' },
+    SJLfamilyName       => { Notes => 'Family/last name' },
+    SJLgenre            => { Notes => 'Genre (mixed case, as stored)' },
+    SJLgenreLower       => { Notes => 'Genre in all lowercase' },
+    SJLgenreUpper       => { Notes => 'Genre in ALL CAPS' },
+    SJLgenreSentenceCase=> { Notes => 'Genre with first letter capitalised' },
+    SJLgenreCapitalized => { Notes => 'Genre with all words capitalised (Title Case)' },
+    SJLgroup            => { Notes => 'Group or ensemble name' },
+    SJLheadline         => { Notes => 'IPTC-style headline for the file' },
+    SJLidentifier       => { Notes => 'Generic identifier string (non-UUID)' },
+    SJLinstructions     => { Notes => 'Special handling instructions (IPTC)' },
+    SJLinstrumentCategory => { Notes => 'Music instrument category' },
+    SJLinstrumentName   => { Notes => 'Specific instrument name' },
+    SJLisJunk           => { Notes => 'true if marked as junk/spam' },
+    SJLisShared         => { Notes => 'true if file is shared with others' },
+    SJLisoSpeed         => { Notes => 'Camera ISO speed rating' },
+    SJLkeySignature     => { Notes => 'Musical key signature (e.g. C major, A minor)' },
+    SJLkeywords         => { Notes => 'Comma-separated keyword tags' },
+    SJLkind             => { Notes => 'macOS file kind string (e.g. JPEG image, PDF document)' },
+    SJLlanguages        => { Notes => 'Comma-separated BCP-47 language codes' },
+    SJLlayers           => { Notes => 'Layer names in layered document (Photoshop etc.)' },
+    SJLloopDescriptors  => { Notes => 'Loop descriptors for audio loop files' },
+    SJLloopFileType     => { Notes => 'Loop file type: one-shot|loop|etc.' },
+    SJLloopOriginalKey  => { Notes => 'Original musical key of loop' },
+    SJLloopScaleType    => { Notes => 'Loop scale type: minor|major|etc.' },
+    SJLlyricist         => { Notes => 'Lyricist name' },
+    SJLmaxAperture      => { Notes => 'Maximum aperture of lens (f-number)' },
+    SJLmediaExtensions  => { Notes => 'Comma-separated media file extensions in bundle' },
+    SJLmediaTypes       => { Notes => 'Comma-separated media types (UTI strings)' },
+    SJLmessageID        => { Notes => 'Email Message-ID header value' },
+    SJLmovieInfo        => { Notes => 'Movie information string' },
+    SJLmusicalGenre     => { Notes => 'Musical genre (distinct from general genre)' },
+    SJLname             => { Notes => 'Short display name for the file or item' },
+    SJLnumberOfItems    => { Notes => 'Item count in container (folder, archive, playlist)' },
+    SJLorganizations    => { Notes => 'Comma-separated organisation names' },
+    SJLorientation      => { Notes => 'Image orientation: landscape|portrait|square' },
+    SJLoriginalFormat   => { Notes => 'Original file format before conversion' },
+    SJLoriginalSource   => { Notes => 'Original source URL or path before archive/rename' },
+    SJLpageHeight       => { Notes => 'Document page height in points' },
+    SJLpageWidth        => { Notes => 'Document page width in points' },
+    SJLpages            => { Notes => 'Number of pages in document' },
+    SJLparticipants     => { Notes => 'Comma-separated participant names (meeting, call)' },
+    SJLperformers       => { Notes => 'Comma-separated performer names' },
+    SJLpriority         => { Notes => 'Priority: 0 (none) through 9 (highest)' },
+    SJLproducer         => { Notes => 'Producer name' },
+    SJLpublishers       => { Notes => 'Comma-separated publisher names' },
+    SJLrating           => { Notes => 'Star rating 0-5 as integer string' },
+    SJLrawQuery         => { Notes => 'Raw Spotlight / search query that found this file' },
+    SJLreadStatus       => { Notes => 'Read status: read|unread' },
+    SJLrecipients       => { Notes => 'Comma-separated recipient names' },
+    SJLrecordingDate    => { Notes => 'Date content was recorded (ISO 8601)' },
+    SJLrights           => { Notes => 'Rights management string (Dublin Core)' },
+    SJLsampleRate       => { Notes => 'Audio sample rate in Hz' },
+    SJLsecurity         => { Notes => 'Security classification label' },
+    SJLserver           => { Notes => 'Server hostname for remote resources' },
+    SJLsharedFileOwner  => { Notes => 'Owner name of a shared file' },
+    SJLsharedProjectID  => { Notes => 'Shared project identifier' },
+    SJLspotlightComment => { Notes => 'macOS Finder/Spotlight comment (kMDItemFinderComment)' },
+    SJLspotlightItems   => { Notes => 'Comma-separated Spotlight item IDs' },
+    SJLstartDate        => { Notes => 'Event or project start date (ISO 8601)' },
+    SJLendDate          => { Notes => 'Event or project end date (ISO 8601)' },
+    SJLdueDate          => { Notes => 'Task or project due date (ISO 8601)' },
+    SJLdateAdded        => { Notes => 'Date file was added to the system (ISO 8601)' },
+    SJLdateLastViewed   => { Notes => 'Date file was last opened/viewed (ISO 8601)' },
+    SJLdateReceived     => { Notes => 'Date file was received (email attachment, transfer)' },
+    SJLpurchaseDate     => { Notes => 'Purchase date for purchased media (ISO 8601)' },
+    SJLstateOrProvince  => { Notes => 'State or province (alternative to SJLstate)' },
+    SJLstationery       => { Notes => 'true if file is a stationery pad template' },
+    SJLstreamable       => { Notes => 'true if media can be streamed progressively' },
+    SJLstyleName        => { Notes => 'Applied style or template name in document' },
+    SJLsubject          => { Notes => 'Subject or topic of the document' },
+    SJLdeliveryType     => { Notes => 'Delivery type: progressive|streaming|download' },
+    SJLdocumentContainer=> { Notes => 'Container document path (for embedded files)' },
+    SJLport             => { Notes => 'Network port for remote resource' },
+    SJLprotocol         => { Notes => 'Network protocol: https|ftp|smb|etc.' },
+    SJLremotePath       => { Notes => 'Remote path on server or cloud' },
+    SJLlocalPath        => { Notes => 'Local POSIX path on the processing machine' },
+    SJLpath             => { Notes => 'Canonical path (local or remote, context-dependent)' },
+    SJLcreatedDate      => { Notes => 'File creation date (ISO 8601) — from filesystem or EXIF' },
+    SJLmodifiedDate     => { Notes => 'File modification date (ISO 8601) — from filesystem' },
+    SJLshotOn           => { Notes => 'Device this was shot on (from photo library metadata)' },
+    SJLcontentModified  => { Notes => 'Date content was last modified (not just file metadata)' },
+    SJLrepliedTo        => { Notes => 'true if email message has been replied to' },
+    SJLmessageIDRef     => { Notes => 'Referenced Message-ID (in-reply-to)' },
+    SJLdeliveryStatus   => { Notes => 'Email delivery status' },
+    SJLscene            => { Notes => 'Scene identifier in audio/video production context' },
+    SJLnote             => { Notes => 'Production note field (audio/video scene metadata)' },
+    SJLtake             => { Notes => 'Take number in audio/video production' },
+    SJLtape             => { Notes => 'Tape or reel identifier in production' },
+
+    # -------------------------------------------------------------------------
+    # IMAGE / VIDEO (master_metadata_tags.md — Image/Video section)
+    # -------------------------------------------------------------------------
+    SJLimageCaption     => { Notes => 'Caption text embedded in image file' },
+    SJLimageKeywords    => { Notes => 'Comma-separated keywords embedded in image metadata' },
+    SJLimageUserComment => { Notes => 'User comment field from image EXIF' },
+    SJLimageWidth       => { Notes => 'Image width in pixels' },
+    SJLimageHeight      => { Notes => 'Image height in pixels' },
+    SJLexifImageWidth   => { Notes => 'EXIF ImageWidth tag value' },
+    SJLexifImageHeight  => { Notes => 'EXIF ImageHeight tag value' },
+    SJLsourceImageWidth => { Notes => 'Source image width before any crop/resize' },
+    SJLsourceImageHeight=> { Notes => 'Source image height before any crop/resize' },
+    SJLpixelWidth       => { Notes => 'Pixel width (kMDItemPixelWidth equivalent)' },
+    SJLpixelHeight      => { Notes => 'Pixel height (kMDItemPixelHeight equivalent)' },
+    SJLpixelCount       => { Notes => 'Total pixel count (width × height)' },
+    SJLbitDepth         => { Notes => 'Colour bit depth per channel' },
+    SJLcolorMode        => { Notes => 'Color mode: RGB|CMYK|Grayscale|LAB|etc.' },
+    SJLcolorComponents  => { Notes => 'Number of color components (e.g. 3 for RGB)' },
+    SJLcolorSpace       => { Notes => 'Color space: sRGB|AdobeRGB|P3|etc.' },
+    SJLresolutionWidth  => { Notes => 'Horizontal resolution in DPI' },
+    SJLresolutionHeight => { Notes => 'Vertical resolution in DPI' },
+    SJLvideoFrameRate   => { Notes => 'Video frame rate in fps (e.g. 29.97)' },
+    SJLdurationSeconds  => { Notes => 'Duration in total seconds as decimal string' },
+    SJLdurationMMSS     => { Notes => 'Duration formatted as MM:SS' },
+    SJLdurationHHMMSS   => { Notes => 'Duration formatted as HH:MM:SS' },
+    SJLcompressorID     => { Notes => 'Video compressor four-character code (e.g. avc1)' },
+    SJLcompressorName   => { Notes => 'Human-readable compressor name (e.g. H.264)' },
+    SJLiptcTitle        => { Notes => 'IPTC Object Name / Title field' },
+    SJLiptcSubLocation  => { Notes => 'IPTC Sub-location field' },
+    SJLiptcCity         => { Notes => 'IPTC City field' },
+    SJLiptcCountry      => { Notes => 'IPTC Country field' },
+    SJLiptcProvinceState=> { Notes => 'IPTC Province-State field' },
+    SJLgpsLatitude      => { Notes => 'GPS latitude as decimal string (positive = N)' },
+    SJLgpsLatitudeRef   => { Notes => 'GPS latitude reference: N|S' },
+    SJLgpsLongitude     => { Notes => 'GPS longitude as decimal string (positive = E)' },
+    SJLgpsLongitudeRef  => { Notes => 'GPS longitude reference: E|W' },
+    SJLgpsAltitude      => { Notes => 'GPS altitude in metres above sea level' },
+    SJLgpsAltitudeRef   => { Notes => 'GPS altitude reference: 0=above sea level, 1=below' },
+    SJLgpsImgDirection  => { Notes => 'GPS image direction in degrees (0-359.99)' },
+    SJLgpsImgDirectionRef => { Notes => 'GPS direction reference: T=true, M=magnetic' },
+    SJLgpsPosition      => { Notes => 'GPS position as "lat,lon" decimal string' },
+    SJLgpsSpeed         => { Notes => 'GPS ground speed in km/h' },
+    SJLtvEpisodeTitle   => { Notes => 'TV episode title' },
+    SJLtvShow           => { Notes => 'TV show name' },
+    SJLtvSeason         => { Notes => 'TV season number (1-based)' },
+    SJLtv0Season        => { Notes => 'TV season number zero-padded (e.g. 01)' },
+    SJLtvEpisode        => { Notes => 'TV episode number within season' },
+    SJLtv0Episode       => { Notes => 'TV episode number zero-padded (e.g. 05)' },
+    SJLtvNetwork        => { Notes => 'TV network or streaming service name' },
+    SJLstudio           => { Notes => 'Production studio name' },
+
+    # -------------------------------------------------------------------------
+    # CAMERA / OPTICS (master_metadata_tags.md — Camera section)
+    # -------------------------------------------------------------------------
+    SJLaperture         => { Notes => 'Aperture as f-number string (e.g. f/1.8)' },
+    SJLshutterSpeed     => { Notes => 'Shutter speed as fraction string (e.g. 1/250)' },
+    SJLexposureTime     => { Notes => 'Exposure time in seconds as decimal string' },
+    SJLexposureCompensation => { Notes => 'Exposure compensation in EV (e.g. -0.7)' },
+    SJLexposureMode     => { Notes => 'Exposure mode: auto|manual|auto-bracket' },
+    SJLexposureProgram  => { Notes => 'Exposure program: normal|portrait|landscape|sports|etc.' },
+    SJLiso              => { Notes => 'ISO speed rating as integer string' },
+    SJLcameraMake       => { Notes => 'Camera manufacturer name (e.g. Apple, Canon)' },
+    SJLcameraModel      => { Notes => 'Camera model string (e.g. iPhone 15 Pro)' },
+    SJLcameraSerialNumber => { Notes => 'Camera body serial number' },
+    SJLlens             => { Notes => 'Lens description string' },
+    SJLlensModel        => { Notes => 'Lens model name' },
+    SJLlensMake         => { Notes => 'Lens manufacturer name' },
+    SJLfocalLength      => { Notes => 'Actual focal length in millimetres' },
+    SJLfocalLength35mm  => { Notes => 'Focal length in 35mm equivalent millimetres' },
+    SJLfNumber          => { Notes => 'F-number as decimal string (e.g. 1.8)' },
+    SJLfocusMode        => { Notes => 'Focus mode: auto|manual|continuous|etc.' },
+    SJLshutterCount     => { Notes => 'Total shutter actuation count' },
+    SJLmeteringMode     => { Notes => 'Metering mode: multi|center|spot|average' },
+    SJLwhiteBalance     => { Notes => 'White balance setting: auto|daylight|cloudy|etc.' },
+    SJLflash            => { Notes => 'Flash: on|off|did-not-fire|fired|etc.' },
+    SJLredEye           => { Notes => 'true if red-eye reduction was used' },
+    SJLsceneType        => { Notes => 'Scene type: directly-photographed|etc.' },
+
+    # -------------------------------------------------------------------------
+    # DATE VARIANTS — SHOOTING DATE (master_metadata_tags.md — Date section)
+    # -------------------------------------------------------------------------
+    SJLshootingDateDay      => { Notes => 'Shooting date: day of month without leading zero' },
+    SJLshootingDate0Day     => { Notes => 'Shooting date: day of month zero-padded (01-31)' },
+    SJLshootingDateMonth    => { Notes => 'Shooting date: month number without leading zero' },
+    SJLshootingDate0Month   => { Notes => 'Shooting date: month number zero-padded (01-12)' },
+    SJLshootingDate2DigitYear => { Notes => 'Shooting date: 2-digit year (e.g. 26)' },
+    SJLshootingDate4DigitYear => { Notes => 'Shooting date: 4-digit year (e.g. 2026)' },
+    SJLshootingDateHour24   => { Notes => 'Shooting time: hour in 24h format (0-23)' },
+    SJLshootingDate0Hour24  => { Notes => 'Shooting time: hour 24h zero-padded (00-23)' },
+    SJLshootingDateHour12   => { Notes => 'Shooting time: hour in 12h format (1-12)' },
+    SJLshootingDate0Hour12  => { Notes => 'Shooting time: hour 12h zero-padded (01-12)' },
+    SJLshootingDateMinute   => { Notes => 'Shooting time: minute (0-59)' },
+    SJLshootingDate0Minute  => { Notes => 'Shooting time: minute zero-padded (00-59)' },
+    SJLshootingDateSecond   => { Notes => 'Shooting time: second (0-59)' },
+    SJLshootingDate0Second  => { Notes => 'Shooting time: second zero-padded (00-59)' },
+    SJLshootingDateAmPm     => { Notes => 'Shooting time: am|pm (lowercase)' },
+    SJLshootingDateAMPM     => { Notes => 'Shooting time: AM|PM (uppercase)' },
+    SJLshootingDateAmPmNoonMidnight => { Notes => 'Shooting time: am|pm|noon|midnight' },
+    SJLshootingDateSubSecond  => { Notes => 'Shooting time: sub-second digits' },
+    SJLshootingDate0SubSecond => { Notes => 'Shooting time: sub-second zero-padded' },
+
+    # -------------------------------------------------------------------------
+    # DATE VARIANTS — CREATION DATE
+    # -------------------------------------------------------------------------
+    SJLcreationDateDay      => { Notes => 'Creation date: day without leading zero' },
+    SJLcreationDate0Day     => { Notes => 'Creation date: day zero-padded (01-31)' },
+    SJLcreationDateMonth    => { Notes => 'Creation date: month without leading zero' },
+    SJLcreationDate0Month   => { Notes => 'Creation date: month zero-padded (01-12)' },
+    SJLcreationDate2DigitYear => { Notes => 'Creation date: 2-digit year' },
+    SJLcreationDate4DigitYear => { Notes => 'Creation date: 4-digit year' },
+    SJLcreationDateHour24   => { Notes => 'Creation time: hour 24h (0-23)' },
+    SJLcreationDate0Hour24  => { Notes => 'Creation time: hour 24h zero-padded (00-23)' },
+    SJLcreationDateHour12   => { Notes => 'Creation time: hour 12h (1-12)' },
+    SJLcreationDate0Hour12  => { Notes => 'Creation time: hour 12h zero-padded (01-12)' },
+    SJLcreationDateMinute   => { Notes => 'Creation time: minute (0-59)' },
+    SJLcreationDate0Minute  => { Notes => 'Creation time: minute zero-padded (00-59)' },
+    SJLcreationDateSecond   => { Notes => 'Creation time: second (0-59)' },
+    SJLcreationDate0Second  => { Notes => 'Creation time: second zero-padded (00-59)' },
+    SJLcreationDateAmPm     => { Notes => 'Creation time: am|pm (lowercase)' },
+    SJLcreationDateAMPM     => { Notes => 'Creation time: AM|PM (uppercase)' },
+    SJLcreationDateAmPmNoonMidnight  => { Notes => 'Creation time: am|pm|noon|midnight' },
+    SJLcreationDateAMPMNoonMidnight  => { Notes => 'Creation time: AM|PM|NOON|MIDNIGHT' },
+
+    # -------------------------------------------------------------------------
+    # DATE VARIANTS — MODIFICATION DATE
+    # -------------------------------------------------------------------------
+    SJLmodDateDay       => { Notes => 'Mod date: day without leading zero' },
+    SJLmodDate0Day      => { Notes => 'Mod date: day zero-padded (01-31)' },
+    SJLmodDateMonth     => { Notes => 'Mod date: month without leading zero' },
+    SJLmodDate0Month    => { Notes => 'Mod date: month zero-padded (01-12)' },
+    SJLmodDate2DigitYear=> { Notes => 'Mod date: 2-digit year' },
+    SJLmodDate4DigitYear=> { Notes => 'Mod date: 4-digit year' },
+    SJLmodDateHour24    => { Notes => 'Mod time: hour 24h (0-23)' },
+    SJLmodDate0Hour24   => { Notes => 'Mod time: hour 24h zero-padded (00-23)' },
+    SJLmodDateHour12    => { Notes => 'Mod time: hour 12h (1-12)' },
+    SJLmodDate0Hour12   => { Notes => 'Mod time: hour 12h zero-padded (01-12)' },
+    SJLmodDateMinute    => { Notes => 'Mod time: minute (0-59)' },
+    SJLmodDate0Minute   => { Notes => 'Mod time: minute zero-padded (00-59)' },
+    SJLmodDateSecond    => { Notes => 'Mod time: second (0-59)' },
+    SJLmodDate0Second   => { Notes => 'Mod time: second zero-padded (00-59)' },
+    SJLmodDateAmPm      => { Notes => 'Mod time: am|pm (lowercase)' },
+    SJLmodDateAMPM      => { Notes => 'Mod time: AM|PM (uppercase)' },
+    SJLmodDateAmPmNoonMidnight  => { Notes => 'Mod time: am|pm|noon|midnight' },
+    SJLmodDateAMPMNoonMidnight  => { Notes => 'Mod time: AM|PM|NOON|MIDNIGHT' },
+
+    # -------------------------------------------------------------------------
+    # AUDIO (master_metadata_tags.md — Audio section)
+    # -------------------------------------------------------------------------
+    SJLaudioBitRate     => { Notes => 'Audio bit rate in kbps as integer string' },
+    SJLaudioSampleRate  => { Notes => 'Audio sample rate in Hz as integer string' },
+    SJLaudioAvgBitRate  => { Notes => 'Audio average bit rate in kbps' },
+    SJLbeatsPerMinute   => { Notes => 'BPM as integer string' },
+    SJLproject          => { Notes => 'Production project name (audio scene metadata)' },
+
+    # -------------------------------------------------------------------------
+    # SPOTLIGHT (master_metadata_tags.md — Spotlight section)
+    # -------------------------------------------------------------------------
+    SJLspotlightBitsPerSample    => { Notes => 'kMDItemBitsPerSample — bits per channel' },
+    SJLspotlightFocalLength      => { Notes => 'kMDItemFocalLength — focal length in mm' },
+    SJLspotlightISOSpeed         => { Notes => 'kMDItemISOSpeed — ISO speed rating' },
+    SJLspotlightResWidthDPI      => { Notes => 'kMDItemResolutionWidthDPI' },
+    SJLspotlightResHeightDPI     => { Notes => 'kMDItemResolutionHeightDPI' },
+    SJLspotlightVideoBitRate     => { Notes => 'kMDItemVideoBitRate — video bitrate' },
+    SJLspotlightAudioBitRate     => { Notes => 'kMDItemAudioBitRate — audio bitrate' },
+    SJLspotlightFNumber          => { Notes => 'kMDItemFNumber — f-number' },
+    SJLspotlightExposureProgram  => { Notes => 'kMDItemExposureProgram' },
+    SJLspotlightTimestamp        => { Notes => 'kMDItemTimestamp — generic timestamp' },
+    SJLspotlightAuthors          => { Notes => 'kMDItemAuthors — comma-separated authors' },
+    SJLspotlightParticipants     => { Notes => 'kMDItemParticipants — comma-separated' },
+    SJLspotlightEditors          => { Notes => 'kMDItemEditors — comma-separated editors' },
+    SJLspotlightCodecs           => { Notes => 'kMDItemCodecs — comma-separated codec IDs' },
+    SJLspotlightWhereFroms       => { Notes => 'kMDItemWhereFroms — download source URLs' },
+    SJLspotlightMediaTypes       => { Notes => 'kMDItemMediaTypes — comma-separated' },
+    SJLspotlightPixelWidth       => { Notes => 'kMDItemPixelWidth' },
+    SJLspotlightPixelHeight      => { Notes => 'kMDItemPixelHeight' },
+    SJLspotlightPixelCount       => { Notes => 'kMDItemPixelCount — total pixel count' },
+    SJLspotlightDuration         => { Notes => 'kMDItemDurationSeconds — duration in seconds' },
+    SJLspotlightAperture         => { Notes => 'kMDItemApertureSize — aperture as EV' },
+    SJLspotlightExposureTimeInSec=> { Notes => 'kMDItemExposureTimeSeconds' },
+
+    # -------------------------------------------------------------------------
+    # MISC (master_metadata_tags.md — Miscellaneous section)
+    # -------------------------------------------------------------------------
+    SJLclipboardContents=> { Notes => 'Clipboard contents at time of capture' },
+    SJLuuid             => { Notes => 'Standard UUID (RFC 4122 format with hyphens)' },
+    SJLuuidB            => { Notes => 'UUID variant B (binary/compact representation)' },
+    SJLuuid16           => { Notes => '16-char UUID prefix' },
+    SJLdSYMPaths        => { Notes => 'dSYM debug symbol bundle paths (comma-separated)' },
+    SJLdSYMUUIDs        => { Notes => 'dSYM UUIDs (comma-separated)' },
+    SJLisAppManaged     => { Notes => 'true if file is managed by an application' },
+    SJLpromptForPassword=> { Notes => 'true if file requires password to open' },
+    SJLcustomIcon       => { Notes => 'true if file has a custom Finder icon' },
+    SJLsystemFiles      => { Notes => 'true if this is a protected system file' },
+    SJLstyleNameAlt     => { Notes => 'Alternative style name from application metadata' },
+    SJLsharedProjectIDRef => { Notes => 'Reference ID for a shared project context' },
+    SJLcontactKeywords  => { Notes => 'Keywords from contact record (vCard tags)' },
+    SJLemailAddresses   => { Notes => 'Comma-separated email addresses associated with file' },
+    SJLimAddresses      => { Notes => 'Comma-separated IM addresses' },
+    SJLphoneNumbers     => { Notes => 'Comma-separated phone numbers' },
+    SJLpostScriptName   => { Notes => 'PostScript font name' },
+    SJLfondName         => { Notes => 'FOND resource name (legacy Mac font)' },
+    SJLexecutableArch   => { Notes => 'Executable architecture: arm64|x86_64|universal' },
+    SJLexecutablePlatform => { Notes => 'Executable platform: macOS|iOS|linux|windows' },
+    SJLappCategories    => { Notes => 'Comma-separated app store category names' },
+    SJLattachmentNames  => { Notes => 'Comma-separated attachment filenames' },
+    SJLattachmentTypes  => { Notes => 'Comma-separated attachment MIME types' },
+    SJLaudiences        => { Notes => 'Comma-separated target audience identifiers' },
+    SJLgeneralMidiSeq   => { Notes => 'true if file is a General MIDI sequence' },
 );
 
 1;  # required — do not remove
