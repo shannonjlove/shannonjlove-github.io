@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/shannonjlove/Desktop",
+        "/Users/shannonjlove/Documents",
+        "/Users/shannonjlove/Downloads",
+        "/Users/shannonjlove/Movies",
+        "/Users/shannonjlove/Music",
+        "/Users/shannonjlove/Pictures"
+      ]
+    }
+  }
+}
